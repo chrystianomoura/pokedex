@@ -1,5 +1,9 @@
 const API_BASE_URL = "https://pokeapi.co/api/v2";
 
+/* =========================================================
+   REQUEST
+   ========================================================= */
+
 async function request(endpoint, options = {}) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     signal: options.signal,
@@ -14,6 +18,10 @@ async function request(endpoint, options = {}) {
   return response.json();
 }
 
+/* =========================================================
+   POKÉMON
+   ========================================================= */
+
 export async function getPokemon(idOrName, options = {}) {
   if (idOrName === undefined || idOrName === null || idOrName === "") {
     throw new Error("É necessário informar o ID ou nome do Pokémon.");
@@ -23,6 +31,10 @@ export async function getPokemon(idOrName, options = {}) {
 
   return request(`/pokemon/${encodeURIComponent(identifier)}`, options);
 }
+
+/* =========================================================
+   SPECIES LIST
+   ========================================================= */
 
 export async function getPokemonSpeciesList(
   { limit = 24, offset = 0 } = {},
@@ -44,4 +56,34 @@ export async function getPokemonSpeciesList(
   });
 
   return request(`/pokemon-species?${searchParams.toString()}`, options);
+}
+
+/* =========================================================
+   COMPLETE SPECIES INDEX
+   ========================================================= */
+
+export async function getAllPokemonSpecies(options = {}) {
+  const firstPage = await getPokemonSpeciesList(
+    {
+      limit: 1,
+      offset: 0,
+    },
+    options,
+  );
+
+  const totalSpecies = firstPage.count;
+
+  if (!Number.isInteger(totalSpecies) || totalSpecies <= 0) {
+    return [];
+  }
+
+  const completeList = await getPokemonSpeciesList(
+    {
+      limit: totalSpecies,
+      offset: 0,
+    },
+    options,
+  );
+
+  return completeList.results;
 }

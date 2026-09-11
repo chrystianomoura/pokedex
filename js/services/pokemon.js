@@ -73,12 +73,20 @@ export function mapPokemonSpeciesList(speciesList = []) {
   return speciesList.map(mapPokemonSpeciesReference);
 }
 
+/* =========================================================
+   INTERNAL HELPERS
+   ========================================================= */
+
 /**
  * Extrai o ID numérico de uma URL da PokéAPI.
  *
  * Exemplo:
+ *
  * https://pokeapi.co/api/v2/pokemon-species/25/
- * -> 25
+ *
+ * vira:
+ *
+ * 25
  */
 function getResourceId(url) {
   if (!url) {

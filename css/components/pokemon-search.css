@@ -1,0 +1,292 @@
+/* =========================================================
+   POKÉDEX — SEARCH
+   ========================================================= */
+
+.pokemon-search {
+  display: block;
+  width: 100%;
+  margin-top: 22px;
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.pokemon-search__form {
+  width: 100%;
+}
+
+/* =========================================================
+   FIELD
+   ========================================================= */
+
+.pokemon-search__field {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 52px;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(28, 34, 40, 0.09);
+  border-radius: 16px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.025),
+    0 8px 24px rgba(15, 23, 42, 0.04);
+
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pokemon-search__field:focus-within {
+  border-color: rgba(28, 34, 40, 0.2);
+
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 10px 28px rgba(15, 23, 42, 0.07);
+}
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.pokemon-search__icon {
+  position: absolute;
+
+  top: 50%;
+  left: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #727982;
+
+  transform: translateY(-50%);
+
+  pointer-events: none;
+}
+
+.pokemon-search__icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.pokemon-search__input {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+
+  padding: 0 48px 0 48px;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #17191c;
+
+  font-family: var(--font-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.pokemon-search__input::placeholder {
+  color: #8b9199;
+
+  font-weight: 500;
+
+  opacity: 1;
+}
+
+.pokemon-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.pokemon-search__input::-webkit-search-decoration {
+  display: none;
+}
+
+/* =========================================================
+   CLEAR BUTTON
+   ========================================================= */
+
+.pokemon-search__clear {
+  position: absolute;
+
+  top: 50%;
+  right: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 50%;
+
+  color: #626971;
+
+  transform: translateY(-50%);
+
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.pokemon-search__clear[hidden] {
+  display: none;
+}
+
+.pokemon-search__clear svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.pokemon-search__status {
+  margin-top: 10px;
+
+  padding-inline: 2px;
+
+  color: #6b727b;
+
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
+
+  text-align: center;
+}
+
+.pokemon-search__status[hidden] {
+  display: none;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 600px) {
+  .pokemon-search {
+    max-width: 520px;
+
+    margin-top: 26px;
+  }
+
+  .pokemon-search__field {
+    min-height: 54px;
+
+    border-radius: 17px;
+  }
+
+  .pokemon-search__input {
+    height: 54px;
+
+    font-size: 0.95rem;
+  }
+}
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .pokemon-search {
+    max-width: 560px;
+  }
+
+  .pokemon-search__field {
+    min-height: 56px;
+  }
+
+  .pokemon-search__input {
+    height: 56px;
+
+    padding-left: 52px;
+
+    font-size: 0.98rem;
+  }
+
+  .pokemon-search__icon {
+    left: 18px;
+  }
+}
+
+/* =========================================================
+   POINTER DEVICES
+   ========================================================= */
+
+@media (hover: hover) and (pointer: fine) {
+  .pokemon-search__clear:hover {
+    background: rgba(23, 25, 28, 0.06);
+
+    color: #17191c;
+  }
+
+  .pokemon-search__clear:active {
+    transform: translateY(-50%) scale(0.94);
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 359px) {
+  .pokemon-search {
+    margin-top: 18px;
+  }
+
+  .pokemon-search__field {
+    min-height: 48px;
+
+    border-radius: 14px;
+  }
+
+  .pokemon-search__input {
+    height: 48px;
+
+    padding: 0 44px 0 43px;
+
+    font-size: 0.84rem;
+  }
+
+  .pokemon-search__icon {
+    left: 14px;
+  }
+
+  .pokemon-search__clear {
+    right: 8px;
+
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .pokemon-search__field,
+  .pokemon-search__clear {
+    transition: none;
+  }
+}
