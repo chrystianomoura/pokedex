@@ -19,17 +19,47 @@ async function request(endpoint, options = {}) {
 }
 
 /* =========================================================
+   IDENTIFIER
+   ========================================================= */
+
+function normalizeIdentifier(value, errorMessage) {
+  if (value === undefined || value === null || value === "") {
+    throw new Error(errorMessage);
+  }
+
+  const identifier = String(value).trim().toLowerCase();
+
+  if (!identifier) {
+    throw new Error(errorMessage);
+  }
+
+  return identifier;
+}
+
+/* =========================================================
    POKÉMON
    ========================================================= */
 
 export async function getPokemon(idOrName, options = {}) {
-  if (idOrName === undefined || idOrName === null || idOrName === "") {
-    throw new Error("É necessário informar o ID ou nome do Pokémon.");
-  }
-
-  const identifier = String(idOrName).trim().toLowerCase();
+  const identifier = normalizeIdentifier(
+    idOrName,
+    "É necessário informar o ID ou nome do Pokémon.",
+  );
 
   return request(`/pokemon/${encodeURIComponent(identifier)}`, options);
+}
+
+/* =========================================================
+   POKÉMON SPECIES
+   ========================================================= */
+
+export async function getPokemonSpecies(idOrName, options = {}) {
+  const identifier = normalizeIdentifier(
+    idOrName,
+    "É necessário informar o ID ou nome da espécie.",
+  );
+
+  return request(`/pokemon-species/${encodeURIComponent(identifier)}`, options);
 }
 
 /* =========================================================
@@ -52,6 +82,7 @@ export async function getPokemonSpeciesList(
 
   const searchParams = new URLSearchParams({
     limit: String(limit),
+
     offset: String(offset),
   });
 
@@ -80,12 +111,39 @@ export async function getAllPokemonSpecies(options = {}) {
   const completeList = await getPokemonSpeciesList(
     {
       limit: totalSpecies,
+
       offset: 0,
     },
     options,
   );
 
   return completeList.results;
+}
+
+/* =========================================================
+   EVOLUTION CHAIN
+   ========================================================= */
+
+export async function getEvolutionChain(id, options = {}) {
+  const identifier = normalizeIdentifier(
+    id,
+    "É necessário informar o ID da cadeia evolutiva.",
+  );
+
+  return request(`/evolution-chain/${encodeURIComponent(identifier)}`, options);
+}
+
+/* =========================================================
+   TYPES
+   ========================================================= */
+
+export async function getType(idOrName, options = {}) {
+  const identifier = normalizeIdentifier(
+    idOrName,
+    "É necessário informar o tipo do Pokémon.",
+  );
+
+  return request(`/type/${encodeURIComponent(identifier)}`, options);
 }
 
 /* =========================================================
@@ -97,11 +155,10 @@ export async function getGenerationList(options = {}) {
 }
 
 export async function getGeneration(idOrName, options = {}) {
-  if (idOrName === undefined || idOrName === null || idOrName === "") {
-    throw new Error("É necessário informar a geração.");
-  }
-
-  const identifier = String(idOrName).trim().toLowerCase();
+  const identifier = normalizeIdentifier(
+    idOrName,
+    "É necessário informar a geração.",
+  );
 
   return request(`/generation/${encodeURIComponent(identifier)}`, options);
 }

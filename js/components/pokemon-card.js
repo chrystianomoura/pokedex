@@ -1,10 +1,16 @@
 import { getPokemonType, getPokemonTypeName } from "../data/pokemon-types.js";
 
+/* =========================================================
+   TYPE BADGE
+   ========================================================= */
+
 function createTypeBadge(type) {
   const typeData = getPokemonType(type);
 
   const badge = document.createElement("span");
+
   badge.className = "pokemon-card__type";
+
   badge.textContent = getPokemonTypeName(type);
 
   badge.style.setProperty("--type-color", typeData.color);
@@ -14,20 +20,44 @@ function createTypeBadge(type) {
   return badge;
 }
 
+/* =========================================================
+   ROUTE
+   ========================================================= */
+
+function createPokemonRouteName(name) {
+  return String(name).trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function createPokemonHref(pokemon) {
+  const routeName = createPokemonRouteName(pokemon.name);
+
+  return `/pokemon/${encodeURIComponent(routeName)}`;
+}
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
 export function createPokemonCard(pokemon) {
   const primaryType = pokemon.types[0] ?? "normal";
 
   const primaryTypeData = getPokemonType(primaryType);
 
-  const article = document.createElement("article");
+  /* =======================================================
+     LINK
+     ======================================================= */
 
-  article.className = "pokemon-card";
+  const card = document.createElement("a");
 
-  article.dataset.pokemonId = pokemon.id;
+  card.className = "pokemon-card";
 
-  article.dataset.primaryType = primaryType;
+  card.href = createPokemonHref(pokemon);
 
-  article.style.setProperty("--primary-type-color", primaryTypeData.color);
+  card.dataset.pokemonId = pokemon.id;
+
+  card.dataset.primaryType = primaryType;
+
+  card.style.setProperty("--primary-type-color", primaryTypeData.color);
 
   /* =======================================================
      ARTWORK
@@ -91,9 +121,9 @@ export function createPokemonCard(pokemon) {
 
   info.append(number, name, types);
 
-  article.append(artwork, info);
+  card.append(artwork, info);
 
-  return article;
+  return card;
 }
 
 /* =========================================================

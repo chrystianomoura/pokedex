@@ -1,0 +1,91 @@
+/* =========================================================
+   POKÉDEX — POKÉMON DETAIL
+   ROOT / VIEWPORT
+   ========================================================= */
+
+.pokemon-detail {
+  --detail-surface: color-mix(in srgb, var(--primary-type-color) 7%, #ffffff);
+
+  --detail-surface-strong: color-mix(
+    in srgb,
+    var(--primary-type-color) 11%,
+    #ffffff
+  );
+
+  --detail-border: color-mix(
+    in srgb,
+    var(--primary-type-color) 14%,
+    rgba(23, 25, 28, 0.05)
+  );
+
+  --detail-muted: #747b84;
+  --detail-soft: #f5f6f7;
+
+  position: relative;
+
+  width: 100%;
+
+  isolation: isolate;
+}
+
+/* =========================================================
+   VIEWPORT THEME
+   ========================================================= */
+
+.pokemon-detail::before {
+  position: fixed;
+
+  z-index: -1;
+
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at 50% 18%,
+      color-mix(in srgb, var(--primary-type-color) 38%, #ffffff) 0%,
+      transparent 48%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary-type-color) 32%, #ffffff) 0%,
+      color-mix(in srgb, var(--primary-type-color) 26%, #ffffff) 42%,
+      color-mix(in srgb, var(--primary-type-color) 21%, #ffffff) 72%,
+      color-mix(in srgb, var(--primary-type-color) 18%, #ffffff) 100%
+    );
+
+  content: "";
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 600px) {
+  .pokemon-detail {
+    max-width: 760px;
+
+    margin: 0 auto;
+  }
+}
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .pokemon-detail {
+    max-width: 980px;
+  }
+}
+
+/* =========================================================
+   LARGE DESKTOP
+   ========================================================= */
+
+@media (min-width: 1180px) {
+  .pokemon-detail {
+    max-width: 1040px;
+  }
+}

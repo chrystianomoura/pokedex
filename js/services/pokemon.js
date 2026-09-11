@@ -2,10 +2,10 @@
    POKÉDEX — POKÉMON SERVICE
    ========================================================= */
 
-/**
- * Converte os dados completos de um Pokémon vindos da PokéAPI
- * para o formato utilizado pelos cards da aplicação.
- */
+/* =========================================================
+   CARD
+   ========================================================= */
+
 export function mapPokemonToCard(pokemon) {
   if (!pokemon) {
     throw new Error("Dados do Pokémon não informados.");
@@ -19,8 +19,12 @@ export function mapPokemonToCard(pokemon) {
     name: formatPokemonName(pokemon.name),
 
     types: [...pokemon.types]
-      .sort((a, b) => a.slot - b.slot)
-      .map((item) => item.type.name),
+      .sort((first, second) => {
+        return first.slot - second.slot;
+      })
+      .map((item) => {
+        return item.type.name;
+      }),
 
     artwork:
       pokemon.sprites?.other?.["official-artwork"]?.front_default ??
@@ -29,24 +33,10 @@ export function mapPokemonToCard(pokemon) {
   };
 }
 
-/**
- * Converte uma entrada retornada por /pokemon-species
- * para uma referência simples da National Dex.
- *
- * Exemplo:
- *
- * {
- *   name: "bulbasaur",
- *   url: "https://pokeapi.co/api/v2/pokemon-species/1/"
- * }
- *
- * vira:
- *
- * {
- *   id: 1,
- *   name: "bulbasaur"
- * }
- */
+/* =========================================================
+   SPECIES REFERENCE
+   ========================================================= */
+
 export function mapPokemonSpeciesReference(species) {
   if (!species) {
     throw new Error("Dados da espécie não informados.");
@@ -62,67 +52,57 @@ export function mapPokemonSpeciesReference(species) {
 
   return {
     id,
+
     name: species.name,
   };
 }
 
-/**
- * Normaliza uma lista retornada por /pokemon-species.
- */
+/* =========================================================
+   SPECIES LIST
+   ========================================================= */
+
 export function mapPokemonSpeciesList(speciesList = []) {
   return speciesList.map(mapPokemonSpeciesReference);
 }
 
 /* =========================================================
-   INTERNAL HELPERS
+   RESOURCE ID
    ========================================================= */
 
-/**
- * Extrai o ID numérico de uma URL da PokéAPI.
- *
- * Exemplo:
- *
- * https://pokeapi.co/api/v2/pokemon-species/25/
- *
- * vira:
- *
- * 25
- */
 function getResourceId(url) {
   if (!url) {
     return null;
   }
 
-  const parts = url.split("/").filter(Boolean);
+  const parts = String(url).split("/").filter(Boolean);
 
   const id = Number(parts.at(-1));
 
-  return Number.isInteger(id) && id > 0 ? id : null;
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
 }
 
-/**
- * Formata o número da National Dex.
- *
- * 1    -> #001
- * 25   -> #025
- * 1025 -> #1025
- */
+/* =========================================================
+   FORMAT — NUMBER
+   ========================================================= */
+
 function formatPokemonNumber(id) {
-  return `#${String(id).padStart(3, "0")}`;
+  return `#${String(id).padStart(4, "0")}`;
 }
 
-/**
- * Formata nomes retornados pela PokéAPI.
- *
- * "mr-mime"   -> "Mr Mime"
- * "tapu-koko" -> "Tapu Koko"
- */
+/* =========================================================
+   FORMAT — NAME
+   ========================================================= */
+
 function formatPokemonName(name) {
   if (!name) {
     return "";
   }
 
-  return name
+  return String(name)
     .split("-")
     .map((word) => {
       return word.charAt(0).toUpperCase() + word.slice(1);

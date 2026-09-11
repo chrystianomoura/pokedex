@@ -1,0 +1,255 @@
+/* =========================================================
+   POKÉDEX — POKÉMON DETAIL
+   STATES
+   ========================================================= */
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.pokemon-detail-error {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 60vh;
+
+  padding: 40px 20px;
+
+  text-align: center;
+}
+
+.pokemon-detail-error__title {
+  margin: 0;
+
+  color: var(--color-text);
+
+  font-size: clamp(2rem, 9vw, 3.2rem);
+
+  font-weight: 800;
+
+  line-height: 0.95;
+
+  letter-spacing: -0.055em;
+}
+
+.pokemon-detail-error__description {
+  max-width: 28rem;
+
+  margin-top: 14px;
+
+  color: var(--color-text-secondary);
+
+  font-size: 0.9rem;
+
+  line-height: 1.6;
+}
+
+.pokemon-detail-error__back {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 42px;
+
+  margin-top: 22px;
+
+  padding: 10px 16px;
+
+  border-radius: 999px;
+
+  background: var(--color-text);
+
+  color: #ffffff;
+
+  font-size: 0.8rem;
+  font-weight: 750;
+
+  line-height: 1;
+}
+
+/* =========================================================
+   SKELETON
+   ========================================================= */
+
+.pokemon-detail--skeleton {
+  pointer-events: none;
+}
+
+.pokemon-detail__skeleton {
+  position: relative;
+
+  overflow: hidden;
+
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.pokemon-detail__skeleton::after {
+  position: absolute;
+
+  inset: 0;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.75),
+    transparent
+  );
+
+  content: "";
+
+  transform: translateX(-100%);
+
+  animation: pokemon-detail-skeleton 1.25s ease-in-out infinite;
+}
+
+/* =========================================================
+   SKELETON — HERO
+   ========================================================= */
+
+.pokemon-detail__skeleton-back {
+  width: 88px;
+  height: 40px;
+
+  border-radius: 999px;
+}
+
+.pokemon-detail__skeleton-favorite {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 50%;
+}
+
+.pokemon-detail__skeleton-number {
+  width: 64px;
+  height: 15px;
+
+  margin-bottom: 11px;
+}
+
+.pokemon-detail__skeleton-name {
+  width: min(72%, 250px);
+
+  height: 44px;
+
+  margin-bottom: 3px;
+
+  border-radius: 12px;
+}
+
+.pokemon-detail__skeleton-type {
+  width: 78px;
+  height: 32px;
+
+  border-radius: 999px;
+}
+
+.pokemon-detail__skeleton-image {
+  width: min(78%, 290px);
+
+  aspect-ratio: 1;
+
+  border-radius: 50%;
+
+  transform: translateY(52px);
+}
+
+/* =========================================================
+   SKELETON — CONTENT
+   ========================================================= */
+
+.pokemon-detail__skeleton-tab {
+  width: 70%;
+  height: 14px;
+
+  margin: auto;
+}
+
+.pokemon-detail__skeleton-section-title {
+  width: 86px;
+  height: 20px;
+
+  margin: 0 auto 16px;
+}
+
+.pokemon-detail__skeleton-description {
+  width: 100%;
+  height: 84px;
+
+  margin-bottom: 22px;
+
+  border-radius: 13px;
+
+  background: #eceef0;
+}
+
+.pokemon-detail__skeleton-facts {
+  width: 100%;
+  max-width: 360px;
+
+  height: 72px;
+
+  margin: 0 auto;
+
+  border-radius: 14px;
+
+  background: #eceef0;
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 359px) {
+  .pokemon-detail__skeleton-image {
+    transform: translateY(46px);
+  }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 600px) {
+  .pokemon-detail__skeleton-image {
+    transform: translateY(64px);
+  }
+}
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .pokemon-detail__skeleton-image {
+    transform: translateY(68px);
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .pokemon-detail__skeleton::after {
+    animation: none;
+  }
+}
+
+/* =========================================================
+   SKELETON ANIMATION
+   ========================================================= */
+
+@keyframes pokemon-detail-skeleton {
+  100% {
+    transform: translateX(100%);
+  }
+}

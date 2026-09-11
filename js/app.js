@@ -6,6 +6,8 @@ import { createPokemonSearchFeature } from "./features/search.js";
 
 import { createPokemonGenerationsFeature } from "./features/generations.js";
 
+import { createPokemonDetailFeature } from "./features/pokemon-detail.js";
+
 import { createRouter } from "./router/router.js";
 
 /* =========================================================
@@ -53,6 +55,8 @@ let nationalDex = null;
 let pokemonSearch = null;
 
 let pokemonGenerations = null;
+
+let pokemonDetail = null;
 
 /* =========================================================
    HOME STATE
@@ -490,7 +494,9 @@ function restoreHomeNavigationState() {
 
     window.scrollTo({
       top: homeNavigationState.scrollY,
+
       left: 0,
+
       behavior: "instant",
     });
   });
@@ -501,6 +507,10 @@ function restoreHomeNavigationState() {
    ========================================================= */
 
 async function mountHome() {
+  pokemonDetail?.destroy();
+
+  pokemonDetail = null;
+
   await initializeHome();
 
   /*
@@ -542,50 +552,88 @@ async function mountHome() {
    POKÉMON ROUTE
    ========================================================= */
 
-function mountPokemonRoute(route) {
+async function mountPokemonRoute(route) {
   saveHomeNavigationState();
 
+  pokemonDetail?.destroy();
+
+  pokemonDetail = null;
+
   const pokemon = route.params.pokemon;
+
+  /* =======================================================
+     PAGE
+     ======================================================= */
 
   const page = document.createElement("main");
 
   page.className = "pokedex-page";
 
   /* =======================================================
-     TITLE
+     DETAIL HOST
      ======================================================= */
 
-  const title = document.createElement("h1");
+  const detailHost = document.createElement("div");
 
-  title.className = "pokedex-page__title";
+  detailHost.className = "pokedex-page__pokemon-detail";
 
-  title.textContent = formatPokemonRouteName(pokemon);
-
-  /* =======================================================
-     BACK
-     ======================================================= */
-
-  const backLink = document.createElement("a");
-
-  backLink.href = "/";
-
-  backLink.textContent = "Voltar para a Pokédex";
-
-  /* =======================================================
-     ASSEMBLY
-     ======================================================= */
-
-  page.append(title, backLink);
+  page.append(detailHost);
 
   app.replaceChildren(page);
 
   window.scrollTo({
     top: 0,
+
     left: 0,
+
     behavior: "instant",
   });
 
-  document.title = `${formatPokemonRouteName(pokemon)} | Pokédex`;
+  /* =======================================================
+     FEATURE
+     ======================================================= */
+
+  const detailFeature = createPokemonDetailFeature({
+    host: detailHost,
+  });
+
+  pokemonDetail = detailFeature;
+
+  /* =======================================================
+     INITIAL TITLE
+     ======================================================= */
+
+  const routeName = formatPokemonRouteName(pokemon);
+
+  document.title = `${routeName} | Pokédex`;
+
+  /* =======================================================
+     LOAD
+     ======================================================= */
+
+  const loadedPokemon = await detailFeature.load(pokemon);
+
+  /*
+   * O carregamento da PokéAPI é assíncrono.
+   *
+   * A rota pode mudar antes da resposta chegar.
+   * Nesse caso, não atualizamos o título nem qualquer
+   * estado pertencente à rota antiga.
+   */
+
+  if (
+    router.currentRoute?.name !== "pokemon" ||
+    router.currentRoute?.params?.pokemon !== pokemon ||
+    pokemonDetail !== detailFeature
+  ) {
+    return;
+  }
+
+  if (!loadedPokemon) {
+    return;
+  }
+
+  document.title = `${loadedPokemon.name} | Pokédex`;
 }
 
 /* =========================================================
@@ -594,6 +642,10 @@ function mountPokemonRoute(route) {
 
 function mountNotFound() {
   saveHomeNavigationState();
+
+  pokemonDetail?.destroy();
+
+  pokemonDetail = null;
 
   const page = document.createElement("main");
 
@@ -617,7 +669,9 @@ function mountNotFound() {
 
   window.scrollTo({
     top: 0,
+
     left: 0,
+
     behavior: "instant",
   });
 
@@ -636,7 +690,7 @@ function handleRouteChange(route) {
       break;
 
     case "pokemon":
-      mountPokemonRoute(route);
+      void mountPokemonRoute(route);
 
       break;
 
@@ -652,6 +706,10 @@ function handleRouteChange(route) {
 function formatPokemonRouteName(pokemon) {
   if (!pokemon) {
     return "Pokémon";
+  }
+
+  if (/^\d+$/.test(pokemon)) {
+    return `#${Number(pokemon)}`;
   }
 
   return pokemon
