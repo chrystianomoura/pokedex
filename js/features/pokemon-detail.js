@@ -26,11 +26,29 @@ import {
    ========================================================= */
 
 /* =========================================================
+   DEFAULT BACK TARGET
+   ========================================================= */
+
+const DEFAULT_BACK_TARGET = Object.freeze({
+  href: "/",
+
+  label: "Pokédex",
+
+  ariaLabel: "Voltar para a Pokédex",
+});
+
+/* =========================================================
    FACTORY
    ========================================================= */
 
-export function createPokemonDetailFeature({ host } = {}) {
+export function createPokemonDetailFeature({
+  host,
+
+  backTarget = DEFAULT_BACK_TARGET,
+} = {}) {
   validateHost(host);
+
+  const detailBackTarget = normalizeBackTarget(backTarget);
 
   /* =======================================================
      STATE
@@ -199,7 +217,9 @@ export function createPokemonDetailFeature({ host } = {}) {
      ======================================================= */
 
   function renderPokemon(pokemon) {
-    const detail = createPokemonDetail(pokemon);
+    const detail = createPokemonDetail(pokemon, {
+      backTarget: detailBackTarget,
+    });
 
     host.replaceChildren(detail);
 
@@ -245,9 +265,11 @@ export function createPokemonDetailFeature({ host } = {}) {
 
     backLink.className = "pokemon-detail-error__back";
 
-    backLink.href = "/";
+    backLink.href = detailBackTarget.href;
 
-    backLink.textContent = "Voltar para a Pokédex";
+    backLink.setAttribute("aria-label", detailBackTarget.ariaLabel);
+
+    backLink.textContent = `Voltar para ${detailBackTarget.label}`;
 
     /* =====================================================
        ASSEMBLY
@@ -548,6 +570,38 @@ function normalizeIdentifier(value) {
   }
 
   return identifier;
+}
+
+/* =========================================================
+   BACK TARGET
+   ========================================================= */
+
+function normalizeBackTarget(backTarget) {
+  const href = normalizeText(backTarget?.href);
+
+  const label = normalizeText(backTarget?.label);
+
+  const ariaLabel = normalizeText(backTarget?.ariaLabel);
+
+  return {
+    href: href || DEFAULT_BACK_TARGET.href,
+
+    label: label || DEFAULT_BACK_TARGET.label,
+
+    ariaLabel: ariaLabel || DEFAULT_BACK_TARGET.ariaLabel,
+  };
+}
+
+/* =========================================================
+   NORMALIZE TEXT
+   ========================================================= */
+
+function normalizeText(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim();
 }
 
 /* =========================================================

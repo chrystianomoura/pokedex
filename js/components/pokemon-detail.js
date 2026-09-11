@@ -14,11 +14,29 @@ import {
    ========================================================= */
 
 /* =========================================================
+   DEFAULT BACK TARGET
+   ========================================================= */
+
+const DEFAULT_BACK_TARGET = Object.freeze({
+  href: "/",
+
+  label: "Pokédex",
+
+  ariaLabel: "Voltar para a Pokédex",
+});
+
+/* =========================================================
    DETAIL
    ========================================================= */
 
-export function createPokemonDetail(pokemon) {
+export function createPokemonDetail(
+  pokemon,
+
+  { backTarget = DEFAULT_BACK_TARGET } = {},
+) {
   validatePokemon(pokemon);
+
+  const detailBackTarget = normalizeBackTarget(backTarget);
 
   const article = document.createElement("article");
 
@@ -34,7 +52,7 @@ export function createPokemonDetail(pokemon) {
 
   article.style.setProperty("--primary-type-color", primaryType.color);
 
-  const hero = createHero(pokemon);
+  const hero = createHero(pokemon, detailBackTarget);
 
   const content = createContent(pokemon);
 
@@ -51,12 +69,12 @@ export function createPokemonDetail(pokemon) {
    HERO
    ========================================================= */
 
-function createHero(pokemon) {
+function createHero(pokemon, backTarget) {
   const hero = document.createElement("header");
 
   hero.className = "pokemon-detail__hero";
 
-  const topbar = createTopbar(pokemon);
+  const topbar = createTopbar(pokemon, backTarget);
 
   const identity = createIdentity(pokemon);
 
@@ -73,7 +91,7 @@ function createHero(pokemon) {
    TOPBAR
    ========================================================= */
 
-function createTopbar(pokemon) {
+function createTopbar(pokemon, backTarget) {
   const topbar = document.createElement("div");
 
   topbar.className = "pokemon-detail__topbar";
@@ -82,9 +100,9 @@ function createTopbar(pokemon) {
 
   backLink.className = "pokemon-detail__back";
 
-  backLink.href = "/";
+  backLink.href = backTarget.href;
 
-  backLink.setAttribute("aria-label", "Voltar para a Pokédex");
+  backLink.setAttribute("aria-label", backTarget.ariaLabel);
 
   const backIcon = document.createElement("span");
 
@@ -114,7 +132,7 @@ function createTopbar(pokemon) {
 
   backLabel.className = "pokemon-detail__back-label";
 
-  backLabel.textContent = "Pokédex";
+  backLabel.textContent = backTarget.label;
 
   backLink.append(backIcon, backLabel);
 
@@ -1250,6 +1268,38 @@ function createSkeletonBlock(className) {
   block.className = `pokemon-detail__skeleton ${className}`;
 
   return block;
+}
+
+/* =========================================================
+   BACK TARGET
+   ========================================================= */
+
+function normalizeBackTarget(backTarget) {
+  const href = normalizeText(backTarget?.href);
+
+  const label = normalizeText(backTarget?.label);
+
+  const ariaLabel = normalizeText(backTarget?.ariaLabel);
+
+  return {
+    href: href || DEFAULT_BACK_TARGET.href,
+
+    label: label || DEFAULT_BACK_TARGET.label,
+
+    ariaLabel: ariaLabel || DEFAULT_BACK_TARGET.ariaLabel,
+  };
+}
+
+/* =========================================================
+   NORMALIZE TEXT
+   ========================================================= */
+
+function normalizeText(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim();
 }
 
 /* =========================================================

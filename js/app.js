@@ -97,6 +97,30 @@ const homeNavigationState = {
 };
 
 /* =========================================================
+   POKÉMON DETAIL — BACK TARGET
+   ========================================================= */
+
+const POKEMON_DETAIL_BACK_TARGETS = Object.freeze({
+  home: Object.freeze({
+    href: "/",
+
+    label: "Pokédex",
+
+    ariaLabel: "Voltar para a Pokédex",
+  }),
+
+  favorites: Object.freeze({
+    href: "/favorites",
+
+    label: "Favoritos",
+
+    ariaLabel: "Voltar para os favoritos",
+  }),
+});
+
+let pokemonDetailBackTarget = POKEMON_DETAIL_BACK_TARGETS.home;
+
+/* =========================================================
    HOME PAGE
    ========================================================= */
 
@@ -1012,6 +1036,8 @@ function restoreHomeNavigationState() {
    ========================================================= */
 
 async function mountHome() {
+  pokemonDetailBackTarget = POKEMON_DETAIL_BACK_TARGETS.home;
+
   pokemonDetail?.destroy();
 
   pokemonDetail = null;
@@ -1048,6 +1074,8 @@ async function mountHome() {
    ========================================================= */
 
 async function mountFavorites() {
+  pokemonDetailBackTarget = POKEMON_DETAIL_BACK_TARGETS.favorites;
+
   saveHomeNavigationState();
 
   pokemonDetail?.destroy();
@@ -1156,6 +1184,8 @@ async function mountPokemonRoute(route) {
 
   const detailFeature = createPokemonDetailFeature({
     host: detailHost,
+
+    backTarget: pokemonDetailBackTarget,
   });
 
   pokemonDetail = detailFeature;
