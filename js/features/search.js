@@ -31,19 +31,42 @@ const DEFAULT_ROOT_MARGIN = "0px 0px 400px 0px";
 
 export function createPokemonSearchFeature({
   search,
+
   grid,
+
   searchGrid,
+
   searchSentinel,
+
   batchSize = DEFAULT_BATCH_SIZE,
+
   debounceTime = DEFAULT_DEBOUNCE_TIME,
-  onModeChange,
+
+  onModeChange = null,
+
+  shouldDelegateSearch = null,
+
+  onDelegatedSearch = null,
 } = {}) {
   validateElements({
     search,
+
     grid,
+
     searchGrid,
+
     searchSentinel,
   });
+
+  validateBatchSize(batchSize);
+
+  validateDebounceTime(debounceTime);
+
+  validateCallback(onModeChange, "onModeChange");
+
+  validateCallback(shouldDelegateSearch, "shouldDelegateSearch");
+
+  validateCallback(onDelegatedSearch, "onDelegatedSearch");
 
   /* =======================================================
      STATE — INDEX
@@ -106,9 +129,7 @@ export function createPokemonSearchFeature({
      ======================================================= */
 
   function createSearchController() {
-    if (searchController) {
-      searchController.abort();
-    }
+    abortSearchRequest();
 
     searchController = new AbortController();
 
@@ -126,6 +147,20 @@ export function createPokemonSearchFeature({
   }
 
   /* =======================================================
+     TIMEOUT CONTROL
+     ======================================================= */
+
+  function clearSearchTimeout() {
+    if (!searchTimeout) {
+      return;
+    }
+
+    clearTimeout(searchTimeout);
+
+    searchTimeout = null;
+  }
+
+  /* =======================================================
      STATE
      ======================================================= */
 
@@ -138,11 +173,104 @@ export function createPokemonSearchFeature({
   }
 
   function setSearchMode(active) {
-    isSearchMode = active;
+    const nextState = Boolean(active);
+
+    if (isSearchMode === nextState) {
+      return;
+    }
+
+    isSearchMode = nextState;
 
     if (typeof onModeChange === "function") {
       onModeChange(isSearchMode);
     }
+  }
+
+  /* =======================================================
+     INTERNAL SEARCH RESET
+     ======================================================= */
+
+  function resetInternalSearch({ clearStatus = true } = {}) {
+    clearSearchTimeout();
+
+    searchRequestId += 1;
+
+    abortSearchRequest();
+
+    resetSearchState();
+
+    searchGrid.replaceChildren();
+
+    if (clearStatus) {
+      search.setStatus("");
+    }
+
+    setSearchMode(false);
+
+    updateSentinel();
+  }
+
+  /* =======================================================
+     DELEGATION
+     ======================================================= */
+
+  function isDelegatedSearchActive() {
+    if (typeof shouldDelegateSearch !== "function") {
+      return false;
+    }
+
+    return Boolean(shouldDelegateSearch());
+  }
+
+  function executeDelegatedSearch(query) {
+    resetInternalSearch();
+
+    if (typeof onDelegatedSearch !== "function") {
+      return;
+    }
+
+    onDelegatedSearch(query);
+  }
+
+  function scheduleDelegatedSearch(query) {
+    clearSearchTimeout();
+
+    /*
+     * A Search Feature deixa de controlar os resultados
+     * enquanto a pesquisa estiver delegada.
+     */
+
+    searchRequestId += 1;
+
+    abortSearchRequest();
+
+    resetSearchState();
+
+    searchGrid.replaceChildren();
+
+    search.setStatus("");
+
+    setSearchMode(false);
+
+    updateSentinel();
+
+    const normalizedQuery = normalizePokemonSearchQuery(query);
+
+    /*
+     * Limpar o campo precisa ser imediato.
+     */
+
+    if (!normalizedQuery) {
+      executeDelegatedSearch(query);
+
+      return;
+    }
+
+    searchTimeout = setTimeout(() => {
+      searchTimeout = null;
+
+      executeDelegatedSearch(query);
+    }, debounceTime);
   }
 
   /* =======================================================
@@ -232,10 +360,12 @@ export function createPokemonSearchFeature({
 
   async function loadNextBatch({
     requestId = searchRequestId,
+
     controller = searchController,
   } = {}) {
     if (
       !controller ||
+      controller.signal.aborted ||
       isSearchLoading ||
       searchRenderedCount >= searchMatches.length
     ) {
@@ -246,6 +376,7 @@ export function createPokemonSearchFeature({
 
     const batch = searchMatches.slice(
       searchRenderedCount,
+
       searchRenderedCount + batchSize,
     );
 
@@ -253,9 +384,13 @@ export function createPokemonSearchFeature({
 
     try {
       const requests = batch.map(({ id }) => {
-        return getPokemon(id, {
-          signal: controller.signal,
-        });
+        return getPokemon(
+          id,
+
+          {
+            signal: controller.signal,
+          },
+        );
       });
 
       const rawPokemonList = await Promise.all(requests);
@@ -299,6 +434,17 @@ export function createPokemonSearchFeature({
      ======================================================= */
 
   async function executeSearch(query) {
+    /*
+     * Se filtros avançados estiverem ativos,
+     * a pesquisa deixa de pertencer à Search Feature.
+     */
+
+    if (isDelegatedSearchActive()) {
+      executeDelegatedSearch(query);
+
+      return;
+    }
+
     const normalizedQuery = normalizePokemonSearchQuery(query);
 
     /* =====================================================
@@ -306,19 +452,7 @@ export function createPokemonSearchFeature({
        ===================================================== */
 
     if (!normalizedQuery) {
-      searchRequestId += 1;
-
-      abortSearchRequest();
-
-      resetSearchState();
-
-      searchGrid.replaceChildren();
-
-      search.setStatus("");
-
-      setSearchMode(false);
-
-      updateSentinel();
+      resetInternalSearch();
 
       return;
     }
@@ -350,7 +484,11 @@ export function createPokemonSearchFeature({
         return;
       }
 
-      searchMatches = searchPokemonSpecies(speciesIndex, normalizedQuery);
+      searchMatches = searchPokemonSpecies(
+        speciesIndex,
+
+        normalizedQuery,
+      );
 
       if (searchMatches.length === 0) {
         searchGrid.replaceChildren();
@@ -364,6 +502,7 @@ export function createPokemonSearchFeature({
 
       await loadNextBatch({
         requestId,
+
         controller,
       });
     } catch (error) {
@@ -382,29 +521,35 @@ export function createPokemonSearchFeature({
   }
 
   /* =======================================================
-     DEBOUNCE
+     DEBOUNCE — INTERNAL SEARCH
      ======================================================= */
 
   function scheduleSearch(query) {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-
-      searchTimeout = null;
-    }
-
-    const normalizedQuery = normalizePokemonSearchQuery(query);
-
-    if (!normalizedQuery) {
-      executeSearch(query);
+    if (isDelegatedSearchActive()) {
+      scheduleDelegatedSearch(query);
 
       return;
     }
 
-    searchTimeout = setTimeout(() => {
-      searchTimeout = null;
+    clearSearchTimeout();
 
-      executeSearch(query);
-    }, debounceTime);
+    const normalizedQuery = normalizePokemonSearchQuery(query);
+
+    if (!normalizedQuery) {
+      void executeSearch(query);
+
+      return;
+    }
+
+    searchTimeout = setTimeout(
+      () => {
+        searchTimeout = null;
+
+        void executeSearch(query);
+      },
+
+      debounceTime,
+    );
   }
 
   /* =======================================================
@@ -412,7 +557,15 @@ export function createPokemonSearchFeature({
      ======================================================= */
 
   function handleInput() {
-    scheduleSearch(search.input.value);
+    const query = search.input.value;
+
+    if (isDelegatedSearchActive()) {
+      scheduleDelegatedSearch(query);
+
+      return;
+    }
+
+    scheduleSearch(query);
   }
 
   function handleNativeSearchClear() {
@@ -420,7 +573,13 @@ export function createPokemonSearchFeature({
       return;
     }
 
-    scheduleSearch(search.input.value);
+    if (isDelegatedSearchActive()) {
+      scheduleDelegatedSearch("");
+
+      return;
+    }
+
+    scheduleSearch("");
   }
 
   /* =======================================================
@@ -441,14 +600,16 @@ export function createPokemonSearchFeature({
         if (
           !entry.isIntersecting ||
           !isSearchMode ||
+          isDelegatedSearchActive() ||
           isSearchLoading ||
           searchRenderedCount >= searchMatches.length
         ) {
           return;
         }
 
-        loadNextBatch();
+        void loadNextBatch();
       },
+
       {
         root: null,
 
@@ -472,31 +633,43 @@ export function createPokemonSearchFeature({
   }
 
   /* =======================================================
+     SUSPEND
+     ======================================================= */
+
+  function suspend({ clearStatus = true } = {}) {
+    resetInternalSearch({
+      clearStatus,
+    });
+  }
+
+  /* =======================================================
+     RESUME
+     ======================================================= */
+
+  function resume() {
+    if (isDelegatedSearchActive()) {
+      return;
+    }
+
+    const query = search.input.value;
+
+    if (!normalizePokemonSearchQuery(query)) {
+      resetInternalSearch();
+
+      return;
+    }
+
+    scheduleSearch(query);
+  }
+
+  /* =======================================================
      CLEAR
      ======================================================= */
 
   function clear({ focus = false } = {}) {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-
-      searchTimeout = null;
-    }
-
-    searchRequestId += 1;
-
-    abortSearchRequest();
-
-    resetSearchState();
+    resetInternalSearch();
 
     search.setValue("");
-
-    search.setStatus("");
-
-    searchGrid.replaceChildren();
-
-    setSearchMode(false);
-
-    updateSentinel();
 
     if (focus) {
       search.focus();
@@ -508,9 +681,17 @@ export function createPokemonSearchFeature({
      ======================================================= */
 
   function init() {
-    search.input.addEventListener("input", handleInput);
+    search.input.addEventListener(
+      "input",
 
-    search.input.addEventListener("search", handleNativeSearchClear);
+      handleInput,
+    );
+
+    search.input.addEventListener(
+      "search",
+
+      handleNativeSearchClear,
+    );
 
     setupInfiniteScroll();
 
@@ -524,19 +705,25 @@ export function createPokemonSearchFeature({
      ======================================================= */
 
   function destroy() {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    clearSearchTimeout();
 
-      searchTimeout = null;
-    }
+    searchRequestId += 1;
 
     abortSearchRequest();
 
     stopInfiniteScroll();
 
-    search.input.removeEventListener("input", handleInput);
+    search.input.removeEventListener(
+      "input",
 
-    search.input.removeEventListener("search", handleNativeSearchClear);
+      handleInput,
+    );
+
+    search.input.removeEventListener(
+      "search",
+
+      handleNativeSearchClear,
+    );
   }
 
   /* =======================================================
@@ -545,10 +732,19 @@ export function createPokemonSearchFeature({
 
   return {
     init,
+
     clear,
+
+    suspend,
+
+    resume,
+
     executeSearch,
+
     scheduleSearch,
+
     loadNextBatch,
+
     destroy,
 
     get isActive() {
@@ -573,7 +769,15 @@ export function createPokemonSearchFeature({
    VALIDATION
    ========================================================= */
 
-function validateElements({ search, grid, searchGrid, searchSentinel }) {
+function validateElements({
+  search,
+
+  grid,
+
+  searchGrid,
+
+  searchSentinel,
+}) {
   if (!search || !(search.input instanceof HTMLInputElement)) {
     throw new Error("Search Feature: componente de busca inválido.");
   }
@@ -588,5 +792,39 @@ function validateElements({ search, grid, searchGrid, searchSentinel }) {
 
   if (!(searchSentinel instanceof Element)) {
     throw new Error("Search Feature: sentinel não informado.");
+  }
+}
+
+/* =========================================================
+   BATCH VALIDATION
+   ========================================================= */
+
+function validateBatchSize(batchSize) {
+  if (!Number.isInteger(batchSize) || batchSize <= 0) {
+    throw new Error("Search Feature: tamanho de lote inválido.");
+  }
+}
+
+/* =========================================================
+   DEBOUNCE VALIDATION
+   ========================================================= */
+
+function validateDebounceTime(debounceTime) {
+  if (!Number.isFinite(debounceTime) || debounceTime < 0) {
+    throw new Error("Search Feature: tempo de debounce inválido.");
+  }
+}
+
+/* =========================================================
+   CALLBACK VALIDATION
+   ========================================================= */
+
+function validateCallback(
+  callback,
+
+  name,
+) {
+  if (callback !== null && typeof callback !== "function") {
+    throw new Error(`Search Feature: callback "${name}" inválido.`);
   }
 }

@@ -1,5 +1,7 @@
 import { createPokemonSearch } from "./components/pokemon-search.js";
 
+import { createPokemonFilters } from "./components/pokemon-filters.js";
+
 import { createFavoritesLink } from "./components/favorites-link.js";
 
 import { createNationalDexFeature } from "./features/national-dex.js";
@@ -7,6 +9,8 @@ import { createNationalDexFeature } from "./features/national-dex.js";
 import { createPokemonSearchFeature } from "./features/search.js";
 
 import { createPokemonGenerationsFeature } from "./features/generations.js";
+
+import { createPokemonFiltersFeature } from "./features/filters.js";
 
 import { createPokemonDetailFeature } from "./features/pokemon-detail.js";
 
@@ -70,6 +74,8 @@ let pokemonSearch = null;
 
 let pokemonGenerations = null;
 
+let pokemonFilters = null;
+
 let pokemonDetail = null;
 
 let pokemonFavorites = null;
@@ -81,6 +87,8 @@ let pokemonFavorites = null;
 let homeView = null;
 
 let homeInitializationPromise = null;
+
+let filterInteractionId = 0;
 
 const homeNavigationState = {
   scrollY: 0,
@@ -130,6 +138,16 @@ function createHomePage() {
   const search = createPokemonSearch();
 
   /* =======================================================
+     FILTERS
+     ======================================================= */
+
+  const filters = createPokemonFilters({
+    onApply: handleApplyPokemonFilters,
+
+    onClear: handleClearPokemonFilters,
+  });
+
+  /* =======================================================
      GENERATIONS
      ======================================================= */
 
@@ -137,7 +155,7 @@ function createHomePage() {
 
   generationHost.className = "pokedex-page__generations";
 
-  header.append(titleRow, search.element, generationHost);
+  header.append(titleRow, search.element, filters.element, generationHost);
 
   /* =======================================================
      NATIONAL DEX GRID
@@ -172,6 +190,30 @@ function createHomePage() {
   searchGrid.setAttribute("aria-label", "Resultados da pesquisa");
 
   searchGrid.hidden = true;
+
+  /* =======================================================
+     FILTER GRID
+     ======================================================= */
+
+  const filterGrid = document.createElement("section");
+
+  filterGrid.className = "pokemon-grid pokemon-grid--filters";
+
+  filterGrid.setAttribute("aria-label", "Pokémon filtrados");
+
+  filterGrid.hidden = true;
+
+  /* =======================================================
+     FILTER EMPTY / ERROR STATE
+     ======================================================= */
+
+  const filterEmptyState = document.createElement("p");
+
+  filterEmptyState.className = "pokedex-page__filters-empty";
+
+  filterEmptyState.setAttribute("aria-live", "polite");
+
+  filterEmptyState.hidden = true;
 
   /* =======================================================
      NATIONAL DEX SENTINEL
@@ -210,6 +252,19 @@ function createHomePage() {
   searchSentinel.hidden = true;
 
   /* =======================================================
+     FILTER SENTINEL
+     ======================================================= */
+
+  const filterSentinel = document.createElement("div");
+
+  filterSentinel.className =
+    "pokedex-page__sentinel pokedex-page__filter-sentinel";
+
+  filterSentinel.setAttribute("aria-hidden", "true");
+
+  filterSentinel.hidden = true;
+
+  /* =======================================================
      LOAD MORE
      ======================================================= */
 
@@ -230,9 +285,12 @@ function createHomePage() {
     grid,
     generationGrid,
     searchGrid,
+    filterGrid,
+    filterEmptyState,
     sentinel,
     generationSentinel,
     searchSentinel,
+    filterSentinel,
     loadMoreButton,
   );
 
@@ -245,17 +303,25 @@ function createHomePage() {
 
     searchGrid,
 
+    filterGrid,
+
+    filterEmptyState,
+
     sentinel,
 
     generationSentinel,
 
     searchSentinel,
 
+    filterSentinel,
+
     loadMoreButton,
 
     generationHost,
 
     search,
+
+    filters,
   };
 }
 
@@ -373,18 +439,214 @@ function createFavoritesBackLink() {
 }
 
 /* =========================================================
+   FILTERS — APPLY
+   ========================================================= */
+
+async function handleApplyPokemonFilters(nextFilters) {
+  if (!homeView || !pokemonFilters || !pokemonSearch) {
+    return;
+  }
+
+  filterInteractionId += 1;
+
+  const interactionId = filterInteractionId;
+
+  /* =======================================================
+     DEFAULT FILTERS
+     ======================================================= */
+
+  if (!homeView.filters.isActive) {
+    pokemonFilters.clear();
+
+    homeView.search.setStatus("");
+
+    pokemonSearch.resume();
+
+    updateCurrentHomeView();
+
+    return;
+  }
+
+  /* =======================================================
+     ADVANCED FILTER MODE
+     ======================================================= */
+
+  pokemonSearch.suspend();
+
+  homeView.search.setStatus("Aplicando filtros...");
+
+  await pokemonFilters.apply(
+    nextFilters,
+
+    {
+      searchQuery: homeView.search.input.value,
+    },
+  );
+
+  if (interactionId !== filterInteractionId) {
+    return;
+  }
+
+  updateFilteredSearchStatus();
+
+  updateCurrentHomeView();
+}
+
+/* =========================================================
+   FILTERS — CLEAR
+   ========================================================= */
+
+function handleClearPokemonFilters() {
+  if (!homeView || !pokemonFilters || !pokemonSearch) {
+    return;
+  }
+
+  filterInteractionId += 1;
+
+  pokemonFilters.clear();
+
+  homeView.search.setStatus("");
+
+  pokemonSearch.resume();
+
+  updateCurrentHomeView();
+}
+
+/* =========================================================
+   FILTERS — DELEGATED SEARCH
+   ========================================================= */
+
+async function handleDelegatedPokemonSearch(query) {
+  if (!homeView || !pokemonFilters || !homeView.filters.isActive) {
+    return;
+  }
+
+  filterInteractionId += 1;
+
+  const interactionId = filterInteractionId;
+
+  homeView.search.setStatus("Buscando Pokémon...");
+
+  await pokemonFilters.apply(
+    homeView.filters.getFilters(),
+
+    {
+      searchQuery: query,
+    },
+  );
+
+  if (interactionId !== filterInteractionId) {
+    return;
+  }
+
+  updateFilteredSearchStatus();
+
+  updateCurrentHomeView();
+}
+
+/* =========================================================
+   FILTERS — RESULT STATUS
+   ========================================================= */
+
+function updateFilteredSearchStatus() {
+  if (!homeView || !pokemonFilters || !homeView.filters.isActive) {
+    return;
+  }
+
+  const total = pokemonFilters.totalPokemon;
+
+  /*
+   * O estado de zero resultados pertence à Filters Feature.
+   * Assim evitamos repetir a mesma mensagem abaixo da busca.
+   */
+
+  if (total === 0) {
+    homeView.search.setStatus("");
+
+    return;
+  }
+
+  if (total === 1) {
+    homeView.search.setStatus("1 Pokémon encontrado.");
+
+    return;
+  }
+
+  homeView.search.setStatus(`${total} Pokémon encontrados.`);
+}
+
+/* =========================================================
    HOME VIEW
    ========================================================= */
 
 function updateHomeView({
   grid,
+
   generationGrid,
+
   searchGrid,
+
+  filterGrid,
+
+  filterEmptyState,
+
   sentinel,
+
   generationSentinel,
+
   searchSentinel,
+
+  filterSentinel,
+
   loadMoreButton,
+
+  generationHost,
 }) {
+  /* =======================================================
+     FILTERS
+     ======================================================= */
+
+  if (pokemonFilters?.isActive) {
+    grid.hidden = true;
+
+    generationGrid.hidden = true;
+
+    searchGrid.hidden = true;
+
+    filterGrid.hidden = false;
+
+    sentinel.hidden = true;
+
+    generationSentinel.hidden = true;
+
+    searchSentinel.hidden = true;
+
+    generationHost.hidden = true;
+
+    /*
+     * A própria Filters Feature decide se o botão deve
+     * aparecer. Em zero resultados ele permanece oculto.
+     */
+
+    pokemonFilters.updateSentinel();
+
+    pokemonFilters.updateLoadMoreButton();
+
+    return;
+  }
+
+  /* =======================================================
+     FILTER MODE CLEANUP
+     ======================================================= */
+
+  filterGrid.hidden = true;
+
+  filterSentinel.hidden = true;
+
+  filterEmptyState.hidden = true;
+
+  generationHost.hidden = false;
+
   /* =======================================================
      SEARCH
      ======================================================= */
@@ -454,6 +716,40 @@ function updateHomeView({
 }
 
 /* =========================================================
+   CURRENT HOME VIEW
+   ========================================================= */
+
+function updateCurrentHomeView() {
+  if (!homeView) {
+    return;
+  }
+
+  updateHomeView({
+    grid: homeView.grid,
+
+    generationGrid: homeView.generationGrid,
+
+    searchGrid: homeView.searchGrid,
+
+    filterGrid: homeView.filterGrid,
+
+    filterEmptyState: homeView.filterEmptyState,
+
+    sentinel: homeView.sentinel,
+
+    generationSentinel: homeView.generationSentinel,
+
+    searchSentinel: homeView.searchSentinel,
+
+    filterSentinel: homeView.filterSentinel,
+
+    loadMoreButton: homeView.loadMoreButton,
+
+    generationHost: homeView.generationHost,
+  });
+}
+
+/* =========================================================
    HOME INITIALIZATION
    ========================================================= */
 
@@ -475,17 +771,25 @@ async function initializeHomeFeatures() {
 
     searchGrid,
 
+    filterGrid,
+
+    filterEmptyState,
+
     sentinel,
 
     generationSentinel,
 
     searchSentinel,
 
+    filterSentinel,
+
     loadMoreButton,
 
     generationHost,
 
     search,
+
+    filters,
   } = homeView;
 
   /* =======================================================
@@ -493,22 +797,24 @@ async function initializeHomeFeatures() {
      ======================================================= */
 
   function handleModeChange() {
-    updateHomeView({
-      grid,
-
-      generationGrid,
-
-      searchGrid,
-
-      sentinel,
-
-      generationSentinel,
-
-      searchSentinel,
-
-      loadMoreButton,
-    });
+    updateCurrentHomeView();
   }
+
+  /* =======================================================
+     FILTERS FEATURE
+     ======================================================= */
+
+  pokemonFilters = createPokemonFiltersFeature({
+    grid: filterGrid,
+
+    sentinel: filterSentinel,
+
+    loadMoreButton,
+
+    emptyState: filterEmptyState,
+
+    onModeChange: handleModeChange,
+  });
 
   /* =======================================================
      SEARCH FEATURE
@@ -524,6 +830,14 @@ async function initializeHomeFeatures() {
     searchSentinel,
 
     onModeChange: handleModeChange,
+
+    shouldDelegateSearch: () => {
+      return filters.isActive;
+    },
+
+    onDelegatedSearch: (query) => {
+      void handleDelegatedPokemonSearch(query);
+    },
   });
 
   /* =======================================================
@@ -543,7 +857,27 @@ async function initializeHomeFeatures() {
 
     searchFeature: pokemonSearch,
 
-    onModeChange: handleModeChange,
+    onModeChange: () => {
+      /*
+       * Se o usuário escolher uma geração pelos chips
+       * enquanto filtros avançados estiverem ativos,
+       * saímos do modo avançado.
+       */
+
+      if (filters.isActive) {
+        filterInteractionId += 1;
+
+        filters.reset({
+          notify: false,
+        });
+
+        pokemonFilters.clear();
+
+        search.setStatus("");
+      }
+
+      handleModeChange();
+    },
   });
 
   /* =======================================================
@@ -558,7 +892,11 @@ async function initializeHomeFeatures() {
     loadMoreButton,
 
     canLoad: () => {
-      return !pokemonSearch.isActive && !pokemonGenerations.isActive;
+      return (
+        !pokemonFilters.isActive &&
+        !pokemonSearch.isActive &&
+        !pokemonGenerations.isActive
+      );
     },
   });
 
@@ -567,22 +905,46 @@ async function initializeHomeFeatures() {
      ======================================================= */
 
   loadMoreButton.addEventListener("click", () => {
+    /* ===================================================
+         FILTERS
+         =================================================== */
+
+    if (pokemonFilters.isActive) {
+      void pokemonFilters.loadNextBatch();
+
+      return;
+    }
+
+    /* ===================================================
+         SEARCH
+         =================================================== */
+
     if (pokemonSearch.isActive) {
       return;
     }
 
+    /* ===================================================
+         GENERATION
+         =================================================== */
+
     if (pokemonGenerations.isActive) {
-      pokemonGenerations.loadNextBatch();
+      void pokemonGenerations.loadNextBatch();
 
       return;
     }
 
-    nationalDex.loadMore();
+    /* ===================================================
+         NATIONAL DEX
+         =================================================== */
+
+    void nationalDex.loadMore();
   });
 
   /* =======================================================
      FEATURE INIT
      ======================================================= */
+
+  pokemonFilters.init();
 
   pokemonSearch.init();
 
@@ -605,6 +967,8 @@ function saveHomeNavigationState() {
   if (!homeView) {
     return;
   }
+
+  homeView.filters?.close();
 
   homeNavigationState.scrollY = window.scrollY;
 
@@ -672,21 +1036,7 @@ async function mountHome() {
 
   app.replaceChildren(homeView.page);
 
-  updateHomeView({
-    grid: homeView.grid,
-
-    generationGrid: homeView.generationGrid,
-
-    searchGrid: homeView.searchGrid,
-
-    sentinel: homeView.sentinel,
-
-    generationSentinel: homeView.generationSentinel,
-
-    searchSentinel: homeView.searchSentinel,
-
-    loadMoreButton: homeView.loadMoreButton,
-  });
+  updateCurrentHomeView();
 
   document.title = "Pokédex";
 
