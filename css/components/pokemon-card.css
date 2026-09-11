@@ -48,15 +48,15 @@
   background:
     radial-gradient(
       circle at 50% 58%,
-      color-mix(in srgb, var(--primary-type-color) 18%, transparent) 0%,
-      color-mix(in srgb, var(--primary-type-color) 8%, transparent) 36%,
+      color-mix(in srgb, var(--primary-type-color) 28%, transparent) 0%,
+      color-mix(in srgb, var(--primary-type-color) 14%, transparent) 36%,
       transparent 70%
     ),
     linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
 }
 
 /* ---------------------------------------------------------
-   SOFT PREMIUM HALO
+   SOFT TYPE HALO
    --------------------------------------------------------- */
 
 .pokemon-card__artwork::before {
@@ -72,7 +72,7 @@
 
   border-radius: 50%;
 
-  background: color-mix(in srgb, var(--primary-type-color) 16%, transparent);
+  background: color-mix(in srgb, var(--primary-type-color) 24%, transparent);
 
   filter: blur(20px);
 
@@ -233,6 +233,179 @@
     0 2px 5px rgba(15, 23, 42, 0.06);
 }
 
+/* =========================================================
+   SKELETON
+   ========================================================= */
+
+.pokemon-card--skeleton {
+  pointer-events: none;
+}
+
+.pokemon-card__artwork--skeleton {
+  background: linear-gradient(180deg, #f3f5f7 0%, #eef1f4 100%);
+}
+
+.pokemon-card__artwork--skeleton::before,
+.pokemon-card__artwork--skeleton::after {
+  display: none;
+}
+
+.pokemon-card__skeleton-image {
+  position: relative;
+
+  width: 62%;
+  aspect-ratio: 1;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+
+  background: #e4e8ec;
+}
+
+/* ---------------------------------------------------------
+   SKELETON INFO
+   --------------------------------------------------------- */
+
+.pokemon-card__info--skeleton {
+  gap: 0;
+}
+
+.pokemon-card__skeleton-line,
+.pokemon-card__skeleton-type,
+.pokemon-card__skeleton-image {
+  position: relative;
+
+  overflow: hidden;
+
+  background: #e4e8ec;
+}
+
+/* ---------------------------------------------------------
+   SHIMMER
+   --------------------------------------------------------- */
+
+.pokemon-card__skeleton-line::after,
+.pokemon-card__skeleton-type::after,
+.pokemon-card__skeleton-image::after {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  transform: translateX(-100%);
+
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+
+  animation: pokemon-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes pokemon-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------------------------------------------------------
+   SKELETON NUMBER
+   --------------------------------------------------------- */
+
+.pokemon-card__skeleton-line--number {
+  width: 30px;
+  height: 7px;
+
+  margin-bottom: 7px;
+
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------
+   SKELETON NAME
+   --------------------------------------------------------- */
+
+.pokemon-card__skeleton-line--name {
+  width: 70%;
+  max-width: 92px;
+  height: 14px;
+
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------
+   SKELETON TYPES
+   --------------------------------------------------------- */
+
+.pokemon-card__skeleton-types {
+  display: flex;
+  justify-content: center;
+
+  gap: 6px;
+
+  margin-top: 9px;
+}
+
+.pokemon-card__skeleton-type {
+  width: 52px;
+  height: 21px;
+
+  border-radius: 999px;
+}
+
+/* =========================================================
+   LOAD MORE / INFINITE SCROLL
+   ========================================================= */
+
+.pokedex-page__sentinel {
+  width: 100%;
+  height: 1px;
+}
+
+.pokedex-page__load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: fit-content;
+  min-width: 140px;
+  min-height: 42px;
+
+  margin: 24px auto 0;
+
+  padding: 10px 18px;
+
+  border: 1px solid rgba(28, 34, 40, 0.1);
+  border-radius: 999px;
+
+  background: #ffffff;
+  color: #17191c;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 6px 16px rgba(15, 23, 42, 0.05);
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.pokedex-page__load-more:disabled {
+  cursor: default;
+
+  opacity: 0.58;
+}
+
 /* ---------------------------------------------------------
    INTERACTION
    --------------------------------------------------------- */
@@ -251,11 +424,39 @@
   .pokemon-card:hover .pokemon-card__image {
     transform: scale(0.98);
   }
+
+  .pokedex-page__load-more:not(:disabled):hover {
+    transform: translateY(-1px);
+
+    border-color: rgba(28, 34, 40, 0.17);
+
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 9px 20px rgba(15, 23, 42, 0.08);
+  }
 }
 
-/* ---------------------------------------------------------
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .pokemon-card,
+  .pokemon-card__image,
+  .pokedex-page__load-more {
+    transition: none;
+  }
+
+  .pokemon-card__skeleton-line::after,
+  .pokemon-card__skeleton-type::after,
+  .pokemon-card__skeleton-image::after {
+    animation: none;
+  }
+}
+
+/* =========================================================
    VERY SMALL VIEWPORTS
-   --------------------------------------------------------- */
+   ========================================================= */
 
 @media (max-width: 359px) {
   .pokemon-card {
@@ -280,18 +481,36 @@
     font-size: 0.86rem;
   }
 
-  .pokemon-card__types {
+  .pokemon-card__types,
+  .pokemon-card__skeleton-types {
     gap: 5px;
 
     margin-top: 7px;
   }
 
-  .pokemon-card__type {
+  .pokemon-card__type,
+  .pokemon-card__skeleton-type {
     min-width: 46px;
-    min-height: 19px;
+    height: 19px;
 
     padding: 2px 8px;
 
     font-size: 0.61rem;
+  }
+
+  .pokemon-card__skeleton-type {
+    width: 46px;
+    padding: 0;
+  }
+
+  .pokemon-card__skeleton-line--name {
+    height: 13px;
+  }
+
+  .pokedex-page__load-more {
+    min-width: 128px;
+    min-height: 40px;
+
+    font-size: 0.78rem;
   }
 }
