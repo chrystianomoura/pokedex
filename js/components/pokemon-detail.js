@@ -1,4 +1,8 @@
-import { getPokemonType, getPokemonTypeName } from "../data/pokemon-types.js";
+import {
+  getPokemonType,
+  getPokemonTypeIcon,
+  getPokemonTypeName,
+} from "../data/pokemon-types.js";
 
 /* =========================================================
    POKÉDEX — POKÉMON DETAIL COMPONENT
@@ -28,6 +32,8 @@ export function createPokemonDetail(pokemon) {
   const content = createContent(pokemon);
 
   article.append(hero, content);
+
+  setupSectionTabs(article);
 
   return article;
 }
@@ -206,12 +212,6 @@ function createArtwork(pokemon) {
 
   artwork.className = "pokemon-detail__artwork";
 
-  const background = document.createElement("div");
-
-  background.className = "pokemon-detail__artwork-background";
-
-  background.setAttribute("aria-hidden", "true");
-
   const image = document.createElement("img");
 
   image.className = "pokemon-detail__image";
@@ -228,7 +228,7 @@ function createArtwork(pokemon) {
     image.hidden = true;
   }
 
-  artwork.append(background, image);
+  artwork.append(image);
 
   return artwork;
 }
@@ -246,21 +246,9 @@ function createContent(pokemon) {
 
   const about = createAboutSection(pokemon);
 
-  const weaknesses = createPlaceholderSection({
-    id: "pokemon-detail-weaknesses",
+  const weaknesses = createWeaknessesSection(pokemon);
 
-    title: "Fraquezas",
-
-    className: "pokemon-detail__weaknesses",
-  });
-
-  const evolution = createPlaceholderSection({
-    id: "pokemon-detail-evolution",
-
-    title: "Evolução",
-
-    className: "pokemon-detail__evolution",
-  });
+  const evolution = createEvolutionPlaceholder();
 
   content.append(navigation, about, weaknesses, evolution);
 
@@ -272,28 +260,31 @@ function createContent(pokemon) {
    ========================================================= */
 
 function createSectionNavigation() {
-  const navigation = document.createElement("nav");
+  const navigation = document.createElement("div");
 
   navigation.className = "pokemon-detail__section-navigation";
 
-  navigation.setAttribute("aria-label", "Seções do Pokémon");
+  navigation.setAttribute("role", "tablist");
+
+  navigation.setAttribute("aria-label", "Informações do Pokémon");
 
   navigation.append(
-    createSectionLink({
-      href: "#pokemon-detail-about",
-
+    createSectionTab({
+      id: "pokemon-detail-tab-about",
+      panelId: "pokemon-detail-about",
       label: "Sobre",
+      active: true,
     }),
 
-    createSectionLink({
-      href: "#pokemon-detail-weaknesses",
-
+    createSectionTab({
+      id: "pokemon-detail-tab-weaknesses",
+      panelId: "pokemon-detail-weaknesses",
       label: "Fraquezas",
     }),
 
-    createSectionLink({
-      href: "#pokemon-detail-evolution",
-
+    createSectionTab({
+      id: "pokemon-detail-tab-evolution",
+      panelId: "pokemon-detail-evolution",
       label: "Evolução",
     }),
   );
@@ -301,16 +292,100 @@ function createSectionNavigation() {
   return navigation;
 }
 
-function createSectionLink({ href, label }) {
-  const link = document.createElement("a");
+function createSectionTab({ id, panelId, label, active = false }) {
+  const button = document.createElement("button");
 
-  link.className = "pokemon-detail__section-link";
+  button.id = id;
 
-  link.href = href;
+  button.className = "pokemon-detail__section-link";
 
-  link.textContent = label;
+  button.type = "button";
 
-  return link;
+  button.setAttribute("role", "tab");
+
+  button.setAttribute("aria-controls", panelId);
+
+  button.setAttribute("aria-selected", String(active));
+
+  button.tabIndex = active ? 0 : -1;
+
+  button.dataset.panel = panelId;
+
+  if (active) {
+    button.classList.add("is-active");
+  }
+
+  button.textContent = label;
+
+  return button;
+}
+
+/* =========================================================
+   TABS
+   ========================================================= */
+
+function setupSectionTabs(article) {
+  const tabs = [...article.querySelectorAll('[role="tab"]')];
+
+  const panels = [...article.querySelectorAll('[role="tabpanel"]')];
+
+  function activateTab(selectedTab, { moveFocus = false } = {}) {
+    const targetId = selectedTab.dataset.panel;
+
+    tabs.forEach((tab) => {
+      const isActive = tab === selectedTab;
+
+      tab.classList.toggle("is-active", isActive);
+
+      tab.setAttribute("aria-selected", String(isActive));
+
+      tab.tabIndex = isActive ? 0 : -1;
+    });
+
+    panels.forEach((panel) => {
+      panel.hidden = panel.id !== targetId;
+    });
+
+    if (moveFocus) {
+      selectedTab.focus();
+    }
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => {
+      activateTab(tab);
+    });
+
+    tab.addEventListener("keydown", (event) => {
+      let nextIndex = null;
+
+      if (event.key === "ArrowRight") {
+        nextIndex = (index + 1) % tabs.length;
+      }
+
+      if (event.key === "ArrowLeft") {
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+      }
+
+      if (event.key === "Home") {
+        nextIndex = 0;
+      }
+
+      if (event.key === "End") {
+        nextIndex = tabs.length - 1;
+      }
+
+      if (nextIndex === null) {
+        return;
+      }
+
+      event.preventDefault();
+
+      activateTab(tabs[nextIndex], {
+        moveFocus: true,
+      });
+    });
+  });
 }
 
 /* =========================================================
@@ -318,17 +393,17 @@ function createSectionLink({ href, label }) {
    ========================================================= */
 
 function createAboutSection(pokemon) {
-  const section = document.createElement("section");
+  const section = createTabPanel({
+    id: "pokemon-detail-about",
 
-  section.id = "pokemon-detail-about";
+    labelledBy: "pokemon-detail-tab-about",
 
-  section.className = "pokemon-detail__section pokemon-detail__about";
+    className: "pokemon-detail__about",
 
-  section.setAttribute("aria-labelledby", "pokemon-detail-about-title");
+    active: true,
+  });
 
   const header = createSectionHeader({
-    id: "pokemon-detail-about-title",
-
     title: "Sobre",
   });
 
@@ -346,29 +421,141 @@ function createAboutSection(pokemon) {
 }
 
 /* =========================================================
-   PLACEHOLDER SECTION
+   WEAKNESSES
    ========================================================= */
 
-function createPlaceholderSection({ id, title, className }) {
+function createWeaknessesSection(pokemon) {
+  const section = createTabPanel({
+    id: "pokemon-detail-weaknesses",
+
+    labelledBy: "pokemon-detail-tab-weaknesses",
+
+    className: "pokemon-detail__weaknesses",
+  });
+
+  const header = createSectionHeader({
+    title: "Fraquezas",
+  });
+
+  const weaknesses = Array.isArray(pokemon.weaknesses)
+    ? pokemon.weaknesses
+    : [];
+
+  if (weaknesses.length === 0) {
+    const empty = document.createElement("p");
+
+    empty.className = "pokemon-detail__weakness-empty";
+
+    empty.textContent = "Nenhuma fraqueza de tipo encontrada.";
+
+    section.append(header, empty);
+
+    return section;
+  }
+
+  const list = document.createElement("ul");
+
+  list.className = "pokemon-detail__weakness-list";
+
+  list.setAttribute("aria-label", "Fraquezas por tipo");
+
+  weaknesses.forEach((weakness) => {
+    list.append(createWeaknessItem(weakness));
+  });
+
+  section.append(header, list);
+
+  return section;
+}
+
+/* =========================================================
+   WEAKNESS ITEM
+   ========================================================= */
+
+function createWeaknessItem(weakness) {
+  const typeData = getPokemonType(weakness.type);
+
+  const item = document.createElement("li");
+
+  item.className = "pokemon-detail__weakness";
+
+  item.dataset.type = weakness.type;
+
+  item.style.setProperty("--weakness-type-color", typeData.color);
+
+  const indicator = document.createElement("span");
+
+  indicator.className = "pokemon-detail__weakness-indicator";
+
+  const icon = document.createElement("img");
+
+  icon.className = "pokemon-detail__weakness-icon";
+
+  icon.src = getPokemonTypeIcon(weakness.type);
+
+  icon.alt = "";
+
+  icon.setAttribute("aria-hidden", "true");
+
+  icon.decoding = "async";
+
+  icon.draggable = false;
+
+  indicator.append(icon);
+
+  const name = document.createElement("span");
+
+  name.className = "pokemon-detail__weakness-name";
+
+  name.textContent = weakness.name || getPokemonTypeName(weakness.type);
+
+  item.setAttribute("aria-label", `Fraqueza a ${name.textContent}`);
+
+  item.append(indicator, name);
+
+  return item;
+}
+
+/* =========================================================
+   EVOLUTION
+   ========================================================= */
+
+function createEvolutionPlaceholder() {
+  const section = createTabPanel({
+    id: "pokemon-detail-evolution",
+
+    labelledBy: "pokemon-detail-tab-evolution",
+
+    className: "pokemon-detail__evolution",
+  });
+
+  const header = createSectionHeader({
+    title: "Evolução",
+  });
+
+  section.append(header);
+
+  return section;
+}
+
+/* =========================================================
+   TAB PANEL
+   ========================================================= */
+
+function createTabPanel({ id, labelledBy, className, active = false }) {
   const section = document.createElement("section");
 
   section.id = id;
 
   section.className = `pokemon-detail__section ${className}`;
 
-  section.hidden = true;
+  section.setAttribute("role", "tabpanel");
 
-  const titleId = `${id}-title`;
+  section.setAttribute("aria-labelledby", labelledBy);
 
-  section.setAttribute("aria-labelledby", titleId);
+  section.tabIndex = 0;
 
-  section.append(
-    createSectionHeader({
-      id: titleId,
-
-      title,
-    }),
-  );
+  section.hidden = !active;
 
   return section;
 }
@@ -377,14 +564,12 @@ function createPlaceholderSection({ id, title, className }) {
    SECTION HEADER
    ========================================================= */
 
-function createSectionHeader({ id, title }) {
+function createSectionHeader({ title }) {
   const header = document.createElement("div");
 
   header.className = "pokemon-detail__section-header";
 
   const heading = document.createElement("h2");
-
-  heading.id = id;
 
   heading.className = "pokemon-detail__section-title";
 

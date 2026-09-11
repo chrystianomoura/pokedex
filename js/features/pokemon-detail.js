@@ -1,8 +1,10 @@
-import { getPokemon, getPokemonSpecies } from "../api/pokeapi.js";
+import { getPokemon, getPokemonSpecies, getType } from "../api/pokeapi.js";
 
 import { getPokemonDescriptionPtBr } from "../api/pokemon-descriptions.js";
 
 import { mapPokemonDetail } from "../services/pokemon-detail.js";
+
+import { calculatePokemonWeaknesses } from "../services/pokemon-weaknesses.js";
 
 import {
   createPokemonDetail,
@@ -91,14 +93,18 @@ export function createPokemonDetailFeature({ host } = {}) {
       }
 
       /* ===================================================
-         CANONICAL SPECIES
+         CANONICAL SPECIES + TYPE RELATIONS
          =================================================== */
 
       const speciesIdentifier = getCanonicalSpeciesIdentifier(rawPokemon);
 
-      const rawSpecies = await getPokemonSpecies(speciesIdentifier, {
-        signal: currentController.signal,
-      });
+      const [rawSpecies, typeRelations] = await Promise.all([
+        getPokemonSpecies(speciesIdentifier, {
+          signal: currentController.signal,
+        }),
+
+        loadPokemonTypeRelations(rawPokemon, currentController),
+      ]);
 
       if (!isCurrentRequest(currentRequestId, currentController)) {
         return null;
@@ -118,10 +124,20 @@ export function createPokemonDetailFeature({ host } = {}) {
       }
 
       /* ===================================================
+         WEAKNESSES
+         =================================================== */
+
+      const weaknesses = calculatePokemonWeaknesses(typeRelations);
+
+      /* ===================================================
          MAP
          =================================================== */
 
-      const pokemon = mapPokemonDetail(rawPokemon, rawSpecies, descriptionPtBr);
+      const pokemon = {
+        ...mapPokemonDetail(rawPokemon, rawSpecies, descriptionPtBr),
+
+        weaknesses,
+      };
 
       currentPokemon = pokemon;
 
@@ -260,6 +276,44 @@ export function createPokemonDetailFeature({ host } = {}) {
       return isLoading;
     },
   };
+}
+
+/* =========================================================
+   TYPE RELATIONS
+   ========================================================= */
+
+async function loadPokemonTypeRelations(pokemon, controller) {
+  const typeNames = getPokemonTypeNames(pokemon);
+
+  if (typeNames.length === 0) {
+    throw new Error("Não foi possível identificar os tipos do Pokémon.");
+  }
+
+  return Promise.all(
+    typeNames.map((typeName) => {
+      return getType(typeName, {
+        signal: controller.signal,
+      });
+    }),
+  );
+}
+
+/* =========================================================
+   TYPE NAMES
+   ========================================================= */
+
+function getPokemonTypeNames(pokemon) {
+  if (!Array.isArray(pokemon?.types)) {
+    return [];
+  }
+
+  const typeNames = pokemon.types
+    .map((item) => {
+      return item?.type?.name ?? null;
+    })
+    .filter(Boolean);
+
+  return [...new Set(typeNames)];
 }
 
 /* =========================================================

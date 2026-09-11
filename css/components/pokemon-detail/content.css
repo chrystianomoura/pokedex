@@ -88,6 +88,10 @@
     color-mix(in srgb, var(--primary-type-color) 12%, rgba(23, 25, 28, 0.07));
 }
 
+/* =========================================================
+   SECTION TAB
+   ========================================================= */
+
 .pokemon-detail__section-link {
   position: relative;
 
@@ -99,9 +103,17 @@
   min-width: 0;
   min-height: 56px;
 
+  margin: 0;
+
   padding: 0 4px;
 
+  border: 0;
+
+  background: transparent;
+
   color: #7c838c;
+
+  font: inherit;
 
   font-size: 0.86rem;
   font-weight: 750;
@@ -110,14 +122,24 @@
 
   text-align: center;
 
+  cursor: pointer;
+
+  appearance: none;
+
+  -webkit-appearance: none;
+
   transition: color 160ms ease;
 }
 
-.pokemon-detail__section-link:first-child {
+/* =========================================================
+   SECTION TAB — ACTIVE
+   ========================================================= */
+
+.pokemon-detail__section-link.is-active {
   color: var(--color-text);
 }
 
-.pokemon-detail__section-link:first-child::after {
+.pokemon-detail__section-link.is-active::after {
   position: absolute;
 
   right: 17%;

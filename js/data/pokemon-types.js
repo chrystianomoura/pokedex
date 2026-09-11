@@ -1,117 +1,221 @@
+/* =========================================================
+   POKÉDEX — POKÉMON TYPES
+   ========================================================= */
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+function getTypeIconUrl(fileName) {
+  return new URL(`../../assets/type-icons/${fileName}`, import.meta.url).href;
+}
+
+/* =========================================================
+   TYPES
+   ========================================================= */
+
 const POKEMON_TYPES = {
   normal: {
     name: "Normal",
-    color: "#A4ACAF",
+
+    color: "#9FA19F",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("normal.png"),
   },
 
   fire: {
     name: "Fogo",
-    color: "#FD7D24",
+
+    color: "#E62829",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("fire.png"),
   },
 
   water: {
     name: "Água",
-    color: "#4592C4",
-    textColor: "#FFFFFF",
+
+    color: "#2980EF",
+
+    textColor: "#111417",
+
+    icon: getTypeIconUrl("water.png"),
   },
 
   electric: {
     name: "Elétrico",
-    color: "#EED535",
+
+    color: "#FAC000",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("electric.png"),
   },
 
   grass: {
     name: "Planta",
-    color: "#9BCC50",
+
+    color: "#3FA129",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("grass.png"),
   },
 
   ice: {
     name: "Gelo",
-    color: "#51C4E7",
+
+    color: "#3DCEF3",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("ice.png"),
   },
 
   fighting: {
     name: "Lutador",
-    color: "#D56723",
-    textColor: "#FFFFFF",
+
+    color: "#FF8000",
+
+    textColor: "#111417",
+
+    icon: getTypeIconUrl("fighting.png"),
   },
 
   poison: {
     name: "Venenoso",
-    color: "#B97FC9",
+
+    color: "#9141CB",
+
     textColor: "#FFFFFF",
+
+    icon: getTypeIconUrl("poison.png"),
   },
 
   ground: {
     name: "Terrestre",
-    color: "#AB9842",
-    textColor: "#111417",
+
+    color: "#915121",
+
+    textColor: "#FFFFFF",
+
+    icon: getTypeIconUrl("ground.png"),
   },
 
   flying: {
     name: "Voador",
-    color: "#3DC7EF",
+
+    color: "#81B9EF",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("flying.png"),
   },
 
   psychic: {
     name: "Psíquico",
-    color: "#F366B9",
+
+    color: "#EF4179",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("psychic.png"),
   },
 
   bug: {
     name: "Inseto",
-    color: "#729F3F",
-    textColor: "#FFFFFF",
+
+    color: "#91A119",
+
+    textColor: "#111417",
+
+    icon: getTypeIconUrl("bug.png"),
   },
 
   rock: {
     name: "Pedra",
-    color: "#A38C21",
-    textColor: "#FFFFFF",
+
+    color: "#AFA981",
+
+    textColor: "#111417",
+
+    icon: getTypeIconUrl("rock.png"),
   },
 
   ghost: {
     name: "Fantasma",
-    color: "#7B62A3",
+
+    color: "#704170",
+
     textColor: "#FFFFFF",
+
+    icon: getTypeIconUrl("ghost.png"),
   },
 
   dragon: {
     name: "Dragão",
-    color: "#53A4CF",
-    textColor: "#111417",
+
+    color: "#5060E1",
+
+    textColor: "#FFFFFF",
+
+    icon: getTypeIconUrl("dragon.png"),
   },
 
   dark: {
     name: "Sombrio",
-    color: "#707070",
+
+    color: "#624D4E",
+
     textColor: "#FFFFFF",
+
+    icon: getTypeIconUrl("dark.png"),
   },
 
   steel: {
     name: "Aço",
-    color: "#9EB7B8",
+
+    color: "#60A1B8",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("steel.png"),
   },
 
   fairy: {
     name: "Fada",
-    color: "#FDB9E9",
+
+    color: "#EF70EF",
+
     textColor: "#111417",
+
+    icon: getTypeIconUrl("fairy.png"),
   },
 };
+
+/* =========================================================
+   TYPE
+   ========================================================= */
 
 export function getPokemonType(type) {
   return POKEMON_TYPES[type] ?? POKEMON_TYPES.normal;
 }
 
+/* =========================================================
+   NAME
+   ========================================================= */
+
 export function getPokemonTypeName(type) {
   return getPokemonType(type).name;
+}
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+export function getPokemonTypeIcon(type) {
+  return getPokemonType(type).icon;
 }
