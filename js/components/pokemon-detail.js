@@ -248,7 +248,7 @@ function createContent(pokemon) {
 
   const weaknesses = createWeaknessesSection(pokemon);
 
-  const evolution = createEvolutionPlaceholder();
+  const evolution = createEvolutionSection(pokemon);
 
   content.append(navigation, about, weaknesses, evolution);
 
@@ -520,7 +520,7 @@ function createWeaknessItem(weakness) {
    EVOLUTION
    ========================================================= */
 
-function createEvolutionPlaceholder() {
+function createEvolutionSection(pokemon) {
   const section = createTabPanel({
     id: "pokemon-detail-evolution",
 
@@ -533,9 +533,257 @@ function createEvolutionPlaceholder() {
     title: "Evolução",
   });
 
-  section.append(header);
+  const evolution = pokemon.evolution;
+
+  if (!evolution) {
+    const empty = createEvolutionEmpty(
+      "Dados de evolução temporariamente indisponíveis.",
+    );
+
+    section.append(header, empty);
+
+    return section;
+  }
+
+  /* =======================================================
+     SINGLE STAGE
+     ======================================================= */
+
+  if (isSingleStageEvolution(evolution)) {
+    const message = createEvolutionEmpty("Este Pokémon não evolui.");
+
+    section.append(header, message);
+
+    return section;
+  }
+
+  /* =======================================================
+     TREE
+     ======================================================= */
+
+  const tree = document.createElement("div");
+
+  tree.className = "pokemon-detail__evolution-tree";
+
+  const treeMode = hasEvolutionBranching(evolution) ? "branched" : "linear";
+
+  tree.classList.add(`pokemon-detail__evolution-tree--${treeMode}`);
+
+  tree.dataset.mode = treeMode;
+
+  tree.setAttribute("aria-label", `Cadeia evolutiva de ${pokemon.name}`);
+
+  const currentSpeciesId =
+    Number.isInteger(pokemon.speciesId) && pokemon.speciesId > 0
+      ? pokemon.speciesId
+      : pokemon.id;
+
+  tree.append(createEvolutionNode(evolution, currentSpeciesId, 0));
+
+  section.append(header, tree);
 
   return section;
+}
+
+/* =========================================================
+   EVOLUTION NODE
+   ========================================================= */
+
+function createEvolutionNode(node, currentSpeciesId, depth) {
+  const branch = document.createElement("div");
+
+  branch.className = "pokemon-detail__evolution-branch";
+
+  branch.dataset.depth = depth;
+
+  const pokemon = createEvolutionPokemon(node, currentSpeciesId);
+
+  branch.append(pokemon);
+
+  const children = getEvolutionChildren(node);
+
+  if (children.length === 0) {
+    return branch;
+  }
+
+  const childrenContainer = document.createElement("div");
+
+  childrenContainer.className = "pokemon-detail__evolution-children";
+
+  childrenContainer.setAttribute("role", "group");
+
+  const isBranched = children.length > 1;
+
+  childrenContainer.classList.add(isBranched ? "is-branched" : "is-linear");
+
+  children.forEach((child) => {
+    const connection = document.createElement("div");
+
+    connection.className = "pokemon-detail__evolution-connection";
+
+    connection.classList.add(isBranched ? "is-branched" : "is-linear");
+
+    /*
+     * Cadeia linear:
+     * usamos seta.
+     *
+     * Ramificação:
+     * não criamos seta;
+     * o CSS desenhará apenas
+     * as linhas da árvore.
+     */
+    if (!isBranched) {
+      connection.append(createEvolutionArrow());
+    }
+
+    connection.append(createEvolutionNode(child, currentSpeciesId, depth + 1));
+
+    childrenContainer.append(connection);
+  });
+
+  branch.append(childrenContainer);
+
+  return branch;
+}
+
+/* =========================================================
+   EVOLUTION ARROW
+   ========================================================= */
+
+function createEvolutionArrow() {
+  const arrow = document.createElement("span");
+
+  arrow.className = "pokemon-detail__evolution-arrow";
+
+  arrow.setAttribute("aria-hidden", "true");
+
+  arrow.innerHTML = `
+    <svg
+      viewBox="0 0 24 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 2V27"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+      <path
+        d="M6 21L12 27L18 21"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  `;
+
+  return arrow;
+}
+
+/* =========================================================
+   EVOLUTION POKÉMON
+   ========================================================= */
+
+function createEvolutionPokemon(node, currentSpeciesId) {
+  const link = document.createElement("a");
+
+  link.className = "pokemon-detail__evolution-pokemon";
+
+  link.href = `/pokemon/${node.slug}`;
+
+  link.setAttribute("aria-label", `${node.name} ${node.number}`);
+
+  if (node.id === currentSpeciesId) {
+    link.classList.add("is-current");
+
+    link.setAttribute("aria-current", "page");
+  }
+
+  const artwork = document.createElement("span");
+
+  artwork.className = "pokemon-detail__evolution-artwork";
+
+  const image = document.createElement("img");
+
+  image.className = "pokemon-detail__evolution-image";
+
+  image.src = node.artwork ?? "";
+
+  image.alt = "";
+
+  image.loading = "lazy";
+
+  image.decoding = "async";
+
+  image.draggable = false;
+
+  if (!node.artwork) {
+    image.hidden = true;
+  }
+
+  artwork.append(image);
+
+  const identity = document.createElement("span");
+
+  identity.className = "pokemon-detail__evolution-identity";
+
+  const number = document.createElement("span");
+
+  number.className = "pokemon-detail__evolution-number";
+
+  number.textContent = node.number;
+
+  const name = document.createElement("span");
+
+  name.className = "pokemon-detail__evolution-name";
+
+  name.textContent = node.name;
+
+  identity.append(number, name);
+
+  link.append(artwork, identity);
+
+  return link;
+}
+
+/* =========================================================
+   EVOLUTION STRUCTURE
+   ========================================================= */
+
+function isSingleStageEvolution(evolution) {
+  return getEvolutionChildren(evolution).length === 0;
+}
+
+function hasEvolutionBranching(node) {
+  const children = getEvolutionChildren(node);
+
+  if (children.length > 1) {
+    return true;
+  }
+
+  return children.some((child) => {
+    return hasEvolutionBranching(child);
+  });
+}
+
+function getEvolutionChildren(node) {
+  return Array.isArray(node?.children) ? node.children : [];
+}
+
+/* =========================================================
+   EVOLUTION — EMPTY
+   ========================================================= */
+
+function createEvolutionEmpty(message) {
+  const empty = document.createElement("p");
+
+  empty.className = "pokemon-detail__evolution-empty";
+
+  empty.textContent = message;
+
+  return empty;
 }
 
 /* =========================================================

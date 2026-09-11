@@ -1,10 +1,20 @@
-import { getPokemon, getPokemonSpecies, getType } from "../api/pokeapi.js";
+import {
+  getEvolutionChain,
+  getPokemon,
+  getPokemonSpecies,
+  getType,
+} from "../api/pokeapi.js";
 
 import { getPokemonDescriptionPtBr } from "../api/pokemon-descriptions.js";
 
 import { mapPokemonDetail } from "../services/pokemon-detail.js";
 
 import { calculatePokemonWeaknesses } from "../services/pokemon-weaknesses.js";
+
+import {
+  getEvolutionSpecies,
+  mapEvolutionChain,
+} from "../services/pokemon-evolution.js";
 
 import {
   createPokemonDetail,
@@ -93,10 +103,14 @@ export function createPokemonDetailFeature({ host } = {}) {
       }
 
       /* ===================================================
-         CANONICAL SPECIES + TYPE RELATIONS
+         CANONICAL SPECIES
          =================================================== */
 
       const speciesIdentifier = getCanonicalSpeciesIdentifier(rawPokemon);
+
+      /* ===================================================
+         SPECIES + TYPE RELATIONS
+         =================================================== */
 
       const [rawSpecies, typeRelations] = await Promise.all([
         getPokemonSpecies(speciesIdentifier, {
@@ -111,13 +125,14 @@ export function createPokemonDetailFeature({ host } = {}) {
       }
 
       /* ===================================================
-         PT-BR DESCRIPTION
+         LOCALIZED CONTENT + EVOLUTION
          =================================================== */
 
-      const descriptionPtBr = await loadPokemonDescriptionPtBr(
-        rawSpecies,
-        currentController,
-      );
+      const [descriptionPtBr, evolution] = await Promise.all([
+        loadPokemonDescriptionPtBr(rawSpecies, currentController),
+
+        loadPokemonEvolution(rawSpecies, currentController),
+      ]);
 
       if (!isCurrentRequest(currentRequestId, currentController)) {
         return null;
@@ -137,6 +152,8 @@ export function createPokemonDetailFeature({ host } = {}) {
         ...mapPokemonDetail(rawPokemon, rawSpecies, descriptionPtBr),
 
         weaknesses,
+
+        evolution,
       };
 
       currentPokemon = pokemon;
@@ -333,12 +350,160 @@ async function loadPokemonDescriptionPtBr(species, controller) {
     }
 
     console.warn(
-      `Descrição PT-BR indisponível para o Pokémon #${String(speciesId).padStart(4, "0")}:`,
+      `Descrição PT-BR indisponível para o Pokémon #${String(
+        speciesId,
+      ).padStart(4, "0")}:`,
       error,
     );
 
     return null;
   }
+}
+
+/* =========================================================
+   EVOLUTION
+   ========================================================= */
+
+async function loadPokemonEvolution(species, controller) {
+  const evolutionChainId = getEvolutionChainId(species);
+
+  if (!evolutionChainId) {
+    return null;
+  }
+
+  try {
+    /* =====================================================
+       CHAIN
+       ===================================================== */
+
+    const rawEvolutionChain = await getEvolutionChain(evolutionChainId, {
+      signal: controller.signal,
+    });
+
+    /* =====================================================
+       SPECIES
+       ===================================================== */
+
+    const speciesNames = getEvolutionSpecies(rawEvolutionChain);
+
+    if (speciesNames.length === 0) {
+      return null;
+    }
+
+    /* =====================================================
+       POKÉMON DATA
+       ===================================================== */
+
+    const evolutionEntries = await Promise.all(
+      speciesNames.map(async (speciesName) => {
+        const evolutionPokemon = await loadEvolutionPokemon(
+          speciesName,
+          controller,
+        );
+
+        return [speciesName, evolutionPokemon];
+      }),
+    );
+
+    const pokemonBySpecies = new Map(evolutionEntries);
+
+    /* =====================================================
+       MAP TREE
+       ===================================================== */
+
+    return mapEvolutionChain(rawEvolutionChain, pokemonBySpecies);
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw error;
+    }
+
+    console.warn("Cadeia de evolução temporariamente indisponível:", error);
+
+    return null;
+  }
+}
+
+/* =========================================================
+   EVOLUTION POKÉMON
+   ========================================================= */
+
+async function loadEvolutionPokemon(speciesName, controller) {
+  try {
+    return await getPokemon(speciesName, {
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw error;
+    }
+
+    /*
+     * Algumas espécies possuem uma forma padrão cujo nome
+     * do recurso /pokemon não é exatamente igual ao nome
+     * canônico da espécie.
+     *
+     * Nesses casos buscamos a espécie e usamos sua variedade
+     * marcada como padrão.
+     */
+
+    const rawSpecies = await getPokemonSpecies(speciesName, {
+      signal: controller.signal,
+    });
+
+    const defaultPokemonName = getDefaultPokemonName(rawSpecies);
+
+    if (!defaultPokemonName) {
+      throw error;
+    }
+
+    return getPokemon(defaultPokemonName, {
+      signal: controller.signal,
+    });
+  }
+}
+
+/* =========================================================
+   DEFAULT VARIETY
+   ========================================================= */
+
+function getDefaultPokemonName(species) {
+  if (!Array.isArray(species?.varieties)) {
+    return null;
+  }
+
+  const defaultVariety = species.varieties.find((variety) => {
+    return variety?.is_default === true;
+  });
+
+  const name = defaultVariety?.pokemon?.name;
+
+  if (!name) {
+    return null;
+  }
+
+  return String(name).trim().toLowerCase();
+}
+
+/* =========================================================
+   EVOLUTION CHAIN ID
+   ========================================================= */
+
+function getEvolutionChainId(species) {
+  const url = species?.evolution_chain?.url;
+
+  if (!url) {
+    return null;
+  }
+
+  const parts = String(url).split("/").filter(Boolean);
+
+  const id = Number(parts.at(-1));
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
 }
 
 /* =========================================================

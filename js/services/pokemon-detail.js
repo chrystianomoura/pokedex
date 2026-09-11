@@ -1,3 +1,5 @@
+import { formatPokemonName } from "../utils/pokemon-name.js";
+
 /* =========================================================
    POKÉDEX — POKÉMON DETAIL SERVICE
    ========================================================= */
@@ -203,23 +205,6 @@ function getResourceId(url) {
 
 function formatPokemonNumber(id) {
   return `#${String(id).padStart(4, "0")}`;
-}
-
-/* =========================================================
-   FORMAT — NAME
-   ========================================================= */
-
-function formatPokemonName(name) {
-  if (!name) {
-    return "";
-  }
-
-  return String(name)
-    .split("-")
-    .map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
 }
 
 /* =========================================================

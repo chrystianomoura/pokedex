@@ -1,0 +1,714 @@
+/* =========================================================
+   POKÉDEX — POKÉMON DETAIL
+   EVOLUTION
+   ========================================================= */
+
+/* =========================================================
+   SECTION
+   ========================================================= */
+
+.pokemon-detail__evolution {
+  width: 100%;
+}
+
+/* =========================================================
+   TREE
+   ========================================================= */
+
+.pokemon-detail__evolution-tree {
+  width: 100%;
+
+  margin: 0 auto;
+
+  padding: 8px 0 4px;
+}
+
+/* =========================================================
+   BRANCH
+   ========================================================= */
+
+.pokemon-detail__evolution-branch {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  width: 100%;
+
+  min-width: 0;
+}
+
+/* =========================================================
+   POKÉMON
+   ========================================================= */
+
+.pokemon-detail__evolution-pokemon {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  width: 164px;
+
+  color: var(--color-text, #17191c);
+
+  text-align: center;
+
+  text-decoration: none;
+}
+
+/* =========================================================
+   ARTWORK
+   ========================================================= */
+
+.pokemon-detail__evolution-artwork {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 154px;
+  height: 144px;
+
+  background: transparent;
+
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+/* =========================================================
+   IMAGE
+   ========================================================= */
+
+.pokemon-detail__evolution-image {
+  display: block;
+
+  width: 150px;
+  height: 150px;
+
+  object-fit: contain;
+
+  filter: drop-shadow(0 9px 11px rgba(15, 23, 42, 0.12));
+
+  pointer-events: none;
+
+  user-select: none;
+
+  -webkit-user-drag: none;
+}
+
+/* =========================================================
+   IDENTITY
+   ========================================================= */
+
+.pokemon-detail__evolution-identity {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  width: 100%;
+
+  margin-top: 1px;
+}
+
+/* =========================================================
+   NUMBER
+   ========================================================= */
+
+.pokemon-detail__evolution-number {
+  color: var(--color-text, #17191c);
+
+  font-size: 0.64rem;
+  font-weight: 700;
+
+  line-height: 1;
+
+  letter-spacing: 0.055em;
+}
+
+/* =========================================================
+   NAME
+   ========================================================= */
+
+.pokemon-detail__evolution-name {
+  width: 100%;
+
+  margin-top: 1px;
+
+  overflow: hidden;
+
+  color: var(--color-text, #17191c);
+
+  font-size: 0.86rem;
+  font-weight: 800;
+
+  line-height: 1.1;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   CHILDREN — BASE
+   ========================================================= */
+
+.pokemon-detail__evolution-children {
+  width: 100%;
+}
+
+/* =========================================================
+   LINEAR
+   ========================================================= */
+
+.pokemon-detail__evolution-tree--linear {
+  max-width: 420px;
+}
+
+.pokemon-detail__evolution-children.is-linear {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  margin-top: 4px;
+}
+
+.pokemon-detail__evolution-connection.is-linear {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  width: 100%;
+}
+
+/* =========================================================
+   LINEAR — ARROW
+   ========================================================= */
+
+.pokemon-detail__evolution-arrow {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 25px;
+  height: 36px;
+
+  margin: 7px 0 5px;
+
+  color: var(--color-text, #17191c);
+}
+
+.pokemon-detail__evolution-arrow svg {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+}
+
+/* =========================================================
+   BRANCHED TREE
+   ========================================================= */
+
+.pokemon-detail__evolution-tree--branched {
+  max-width: 620px;
+}
+
+/* =========================================================
+   BRANCHED — CHILDREN
+   ========================================================= */
+
+.pokemon-detail__evolution-children.is-branched {
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  column-gap: 12px;
+  row-gap: 34px;
+
+  width: 100%;
+
+  margin-top: 8px;
+
+  padding-top: 28px;
+
+  isolation: isolate;
+}
+
+/* =========================================================
+   BRANCHED — CENTRAL SPINE
+   ========================================================= */
+
+.pokemon-detail__evolution-children.is-branched::before {
+  position: absolute;
+
+  z-index: 0;
+
+  top: 0;
+  bottom: 0;
+  left: 50%;
+
+  width: 1px;
+
+  background: var(--color-text, #17191c);
+
+  content: "";
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   BRANCHED — CONNECTION
+   ========================================================= */
+
+.pokemon-detail__evolution-connection.is-branched {
+  position: relative;
+
+  z-index: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  min-width: 0;
+
+  padding-top: 22px;
+}
+
+/* =========================================================
+   BRANCHED — HORIZONTAL LINE
+   ========================================================= */
+
+.pokemon-detail__evolution-connection.is-branched::before {
+  position: absolute;
+
+  top: 0;
+
+  height: 1px;
+
+  background: var(--color-text, #17191c);
+
+  content: "";
+
+  pointer-events: none;
+}
+
+.pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
+  right: -6px;
+  left: 50%;
+}
+
+.pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
+  right: 50%;
+  left: -6px;
+}
+
+/* =========================================================
+   BRANCHED — VERTICAL STEM
+   ========================================================= */
+
+.pokemon-detail__evolution-connection.is-branched::after {
+  position: absolute;
+
+  top: 0;
+  left: 50%;
+
+  width: 1px;
+  height: 22px;
+
+  background: var(--color-text, #17191c);
+
+  content: "";
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   BRANCHED — ODD LAST ITEM
+   ========================================================= */
+
+.pokemon-detail__evolution-connection.is-branched:last-child:nth-child(odd) {
+  width: 50%;
+
+  grid-column: 1 / -1;
+
+  justify-self: center;
+}
+
+.pokemon-detail__evolution-connection.is-branched:last-child:nth-child(
+    odd
+  )::before {
+  display: none;
+}
+
+/* =========================================================
+   BRANCHED — POKÉMON SIZE
+   ========================================================= */
+
+.pokemon-detail__evolution-tree--branched
+  .pokemon-detail__evolution-connection
+  .pokemon-detail__evolution-pokemon {
+  width: 144px;
+}
+
+.pokemon-detail__evolution-tree--branched
+  .pokemon-detail__evolution-connection
+  .pokemon-detail__evolution-artwork {
+  width: 136px;
+  height: 128px;
+}
+
+.pokemon-detail__evolution-tree--branched
+  .pokemon-detail__evolution-connection
+  .pokemon-detail__evolution-image {
+  width: 132px;
+  height: 132px;
+}
+
+/* =========================================================
+   SINGLE STAGE / EMPTY
+   ========================================================= */
+
+.pokemon-detail__evolution-empty {
+  max-width: 340px;
+
+  margin: 18px auto 4px;
+
+  color: var(--color-text, #17191c);
+
+  font-size: 0.94rem;
+  font-weight: 650;
+
+  line-height: 1.55;
+
+  text-align: center;
+
+  text-wrap: balance;
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 359px) {
+  .pokemon-detail__evolution-tree {
+    padding-top: 4px;
+  }
+
+  .pokemon-detail__evolution-pokemon {
+    width: 148px;
+  }
+
+  .pokemon-detail__evolution-artwork {
+    width: 138px;
+    height: 130px;
+  }
+
+  .pokemon-detail__evolution-image {
+    width: 134px;
+    height: 134px;
+  }
+
+  .pokemon-detail__evolution-number {
+    font-size: 0.6rem;
+  }
+
+  .pokemon-detail__evolution-name {
+    font-size: 0.8rem;
+  }
+
+  .pokemon-detail__evolution-arrow {
+    width: 23px;
+    height: 33px;
+
+    margin: 6px 0 4px;
+  }
+
+  /* =======================================================
+     BRANCHED
+     ======================================================= */
+
+  .pokemon-detail__evolution-children.is-branched {
+    column-gap: 6px;
+    row-gap: 28px;
+
+    padding-top: 25px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched {
+    padding-top: 19px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched::after {
+    height: 19px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
+    right: -3px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
+    left: -3px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-pokemon {
+    width: 130px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-artwork {
+    width: 122px;
+    height: 116px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-image {
+    width: 118px;
+    height: 118px;
+  }
+
+  .pokemon-detail__evolution-empty {
+    margin-top: 14px;
+
+    font-size: 0.88rem;
+  }
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 600px) {
+  .pokemon-detail__evolution-tree {
+    padding-top: 12px;
+  }
+
+  /* =======================================================
+     LINEAR
+     ======================================================= */
+
+  .pokemon-detail__evolution-pokemon {
+    width: 194px;
+  }
+
+  .pokemon-detail__evolution-artwork {
+    width: 184px;
+    height: 170px;
+  }
+
+  .pokemon-detail__evolution-image {
+    width: 178px;
+    height: 178px;
+  }
+
+  .pokemon-detail__evolution-number {
+    font-size: 0.69rem;
+  }
+
+  .pokemon-detail__evolution-name {
+    font-size: 0.94rem;
+  }
+
+  .pokemon-detail__evolution-arrow {
+    width: 28px;
+    height: 40px;
+
+    margin: 8px 0 6px;
+  }
+
+  /* =======================================================
+     BRANCHED
+     ======================================================= */
+
+  .pokemon-detail__evolution-tree--branched {
+    max-width: 660px;
+  }
+
+  .pokemon-detail__evolution-children.is-branched {
+    column-gap: 22px;
+    row-gap: 42px;
+
+    padding-top: 34px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched {
+    padding-top: 26px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched::after {
+    height: 26px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
+    right: -11px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
+    left: -11px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-pokemon {
+    width: 166px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-artwork {
+    width: 156px;
+    height: 146px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-image {
+    width: 152px;
+    height: 152px;
+  }
+
+  .pokemon-detail__evolution-empty {
+    margin-top: 20px;
+
+    font-size: 1rem;
+  }
+}
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .pokemon-detail__evolution-tree {
+    padding-top: 14px;
+  }
+
+  /* =======================================================
+     LINEAR
+     ======================================================= */
+
+  .pokemon-detail__evolution-pokemon {
+    width: 218px;
+  }
+
+  .pokemon-detail__evolution-artwork {
+    width: 204px;
+    height: 188px;
+  }
+
+  .pokemon-detail__evolution-image {
+    width: 198px;
+    height: 198px;
+  }
+
+  .pokemon-detail__evolution-number {
+    font-size: 0.72rem;
+  }
+
+  .pokemon-detail__evolution-name {
+    font-size: 1rem;
+  }
+
+  .pokemon-detail__evolution-arrow {
+    width: 30px;
+    height: 43px;
+  }
+
+  /* =======================================================
+     BRANCHED
+     ======================================================= */
+
+  .pokemon-detail__evolution-tree--branched {
+    max-width: 720px;
+  }
+
+  .pokemon-detail__evolution-children.is-branched {
+    column-gap: 34px;
+    row-gap: 46px;
+
+    padding-top: 38px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched {
+    padding-top: 29px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched::after {
+    height: 29px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
+    right: -17px;
+  }
+
+  .pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
+    left: -17px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-pokemon {
+    width: 184px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-artwork {
+    width: 172px;
+    height: 160px;
+  }
+
+  .pokemon-detail__evolution-tree--branched
+    .pokemon-detail__evolution-connection
+    .pokemon-detail__evolution-image {
+    width: 168px;
+    height: 168px;
+  }
+}
+
+/* =========================================================
+   POINTER DEVICES
+   ========================================================= */
+
+@media (hover: hover) and (pointer: fine) {
+  .pokemon-detail__evolution-pokemon:hover .pokemon-detail__evolution-artwork {
+    transform: translateY(-3px) scale(1.035);
+
+    filter: drop-shadow(0 11px 18px rgba(15, 23, 42, 0.13));
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .pokemon-detail__evolution-artwork {
+    transition: none;
+  }
+}
