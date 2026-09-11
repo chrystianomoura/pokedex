@@ -1,8 +1,15 @@
 import {
   getAllPokemonSpecies,
+  getGeneration,
+  getGenerationList,
   getPokemon,
   getPokemonSpeciesList,
 } from "./api/pokeapi.js";
+
+import {
+  mapGenerationDetail,
+  mapGenerationList,
+} from "./services/pokemon-generation.js";
 
 import { mapPokemonSpeciesList, mapPokemonToCard } from "./services/pokemon.js";
 
@@ -15,6 +22,8 @@ import {
   createPokemonCard,
   createPokemonCardSkeleton,
 } from "./components/pokemon-card.js";
+
+import { createPokemonGenerationSelector } from "./components/pokemon-generation.js";
 
 import { createPokemonSearch } from "./components/pokemon-search.js";
 
@@ -36,7 +45,11 @@ const PAGE_SIZE = 24;
 
 const SEARCH_BATCH_SIZE = 12;
 
+const GENERATION_BATCH_SIZE = 24;
+
 const SEARCH_DEBOUNCE_TIME = 250;
+
+const NATIONAL_DEX_ID = 0;
 
 /* =========================================================
    STATE — NATIONAL DEX
@@ -79,6 +92,26 @@ let searchRenderedCount = 0;
 let isSearchLoading = false;
 
 /* =========================================================
+   STATE — GENERATIONS
+   ========================================================= */
+
+let generations = [];
+
+let activeGenerationId = NATIONAL_DEX_ID;
+
+let generationMatches = [];
+
+let generationRenderedCount = 0;
+
+let isGenerationLoading = false;
+
+let generationController = null;
+
+let generationObserver = null;
+
+let generationRequestId = 0;
+
+/* =========================================================
    PAGE
    ========================================================= */
 
@@ -107,7 +140,15 @@ function createPage() {
 
   const search = createPokemonSearch();
 
-  header.append(title, search.element);
+  /* =======================================================
+     GENERATION HOST
+     ======================================================= */
+
+  const generationHost = document.createElement("div");
+
+  generationHost.className = "pokedex-page__generations";
+
+  header.append(title, search.element, generationHost);
 
   /* =======================================================
      NATIONAL DEX GRID
@@ -117,7 +158,19 @@ function createPage() {
 
   grid.className = "pokemon-grid pokemon-grid--national";
 
-  grid.setAttribute("aria-label", "Lista de Pokémon");
+  grid.setAttribute("aria-label", "National Dex");
+
+  /* =======================================================
+     GENERATION GRID
+     ======================================================= */
+
+  const generationGrid = document.createElement("section");
+
+  generationGrid.className = "pokemon-grid pokemon-grid--generation";
+
+  generationGrid.setAttribute("aria-label", "Pokémon da geração selecionada");
+
+  generationGrid.hidden = true;
 
   /* =======================================================
      SEARCH GRID
@@ -140,6 +193,19 @@ function createPage() {
   sentinel.className = "pokedex-page__sentinel";
 
   sentinel.setAttribute("aria-hidden", "true");
+
+  /* =======================================================
+     GENERATION SENTINEL
+     ======================================================= */
+
+  const generationSentinel = document.createElement("div");
+
+  generationSentinel.className =
+    "pokedex-page__sentinel pokedex-page__generation-sentinel";
+
+  generationSentinel.setAttribute("aria-hidden", "true");
+
+  generationSentinel.hidden = true;
 
   /* =======================================================
      SEARCH SENTINEL
@@ -173,8 +239,10 @@ function createPage() {
   page.append(
     header,
     grid,
+    generationGrid,
     searchGrid,
     sentinel,
+    generationSentinel,
     searchSentinel,
     loadMoreButton,
   );
@@ -182,16 +250,19 @@ function createPage() {
   return {
     page,
     grid,
+    generationGrid,
     searchGrid,
     sentinel,
+    generationSentinel,
     searchSentinel,
     loadMoreButton,
+    generationHost,
     search,
   };
 }
 
 /* =========================================================
-   DATA — NATIONAL DEX
+   NATIONAL DEX — DATA
    ========================================================= */
 
 async function loadPokemonBatch() {
@@ -228,7 +299,7 @@ async function loadPokemonBatch() {
 }
 
 /* =========================================================
-   DATA — SEARCH INDEX
+   SEARCH INDEX
    ========================================================= */
 
 async function loadPokemonSpeciesIndex() {
@@ -256,6 +327,18 @@ async function loadPokemonSpeciesIndex() {
 }
 
 /* =========================================================
+   GENERATIONS — DATA
+   ========================================================= */
+
+async function loadGenerations() {
+  const response = await getGenerationList();
+
+  generations = mapGenerationList(response.results);
+
+  return generations;
+}
+
+/* =========================================================
    SEARCH REQUEST CONTROL
    ========================================================= */
 
@@ -280,6 +363,30 @@ function abortSearchRequest() {
 }
 
 /* =========================================================
+   GENERATION REQUEST CONTROL
+   ========================================================= */
+
+function createGenerationController() {
+  if (generationController) {
+    generationController.abort();
+  }
+
+  generationController = new AbortController();
+
+  return generationController;
+}
+
+function abortGenerationRequest() {
+  if (!generationController) {
+    return;
+  }
+
+  generationController.abort();
+
+  generationController = null;
+}
+
+/* =========================================================
    SEARCH STATE
    ========================================================= */
 
@@ -292,29 +399,104 @@ function resetSearchState() {
 }
 
 /* =========================================================
-   SEARCH MODE
+   GENERATION STATE
    ========================================================= */
 
-function setSearchMode({
-  active,
+function resetGenerationState() {
+  generationMatches = [];
+
+  generationRenderedCount = 0;
+
+  isGenerationLoading = false;
+}
+
+/* =========================================================
+   MODE
+   ========================================================= */
+
+function isGenerationMode() {
+  return activeGenerationId !== NATIONAL_DEX_ID;
+}
+
+/* =========================================================
+   VIEW STATE
+   ========================================================= */
+
+function updateView({
   grid,
+  generationGrid,
   searchGrid,
   sentinel,
+  generationSentinel,
   searchSentinel,
   loadMoreButton,
 }) {
-  isSearchMode = active;
+  /* =======================================================
+     SEARCH
+     ======================================================= */
 
-  grid.hidden = active;
+  if (isSearchMode) {
+    grid.hidden = true;
 
-  searchGrid.hidden = !active;
+    generationGrid.hidden = true;
 
-  sentinel.hidden = active;
+    searchGrid.hidden = false;
 
-  searchSentinel.hidden =
-    !active || searchRenderedCount >= searchMatches.length;
+    sentinel.hidden = true;
 
-  loadMoreButton.hidden = active;
+    generationSentinel.hidden = true;
+
+    searchSentinel.hidden = searchRenderedCount >= searchMatches.length;
+
+    loadMoreButton.hidden = true;
+
+    return;
+  }
+
+  /* =======================================================
+     GENERATION
+     ======================================================= */
+
+  if (isGenerationMode()) {
+    grid.hidden = true;
+
+    generationGrid.hidden = false;
+
+    searchGrid.hidden = true;
+
+    sentinel.hidden = true;
+
+    generationSentinel.hidden =
+      generationRenderedCount >= generationMatches.length;
+
+    searchSentinel.hidden = true;
+
+    loadMoreButton.hidden = false;
+
+    updateGenerationLoadMoreButton(loadMoreButton);
+
+    return;
+  }
+
+  /* =======================================================
+     NATIONAL DEX
+     ======================================================= */
+
+  grid.hidden = false;
+
+  generationGrid.hidden = true;
+
+  searchGrid.hidden = true;
+
+  sentinel.hidden = !hasMorePokemon;
+
+  generationSentinel.hidden = true;
+
+  searchSentinel.hidden = true;
+
+  loadMoreButton.hidden = false;
+
+  updateLoadMoreButton(loadMoreButton);
 }
 
 /* =========================================================
@@ -361,6 +543,31 @@ function removeSkeletons(skeletons) {
   skeletons.forEach((skeleton) => {
     skeleton.remove();
   });
+}
+
+/* =========================================================
+   GENERATION SELECTOR
+   ========================================================= */
+
+function renderGenerationSelector({ generationHost, onSelect }) {
+  const generationOptions = [
+    {
+      id: NATIONAL_DEX_ID,
+      name: "national-dex",
+      label: "National Dex",
+    },
+    ...generations,
+  ];
+
+  const selector = createPokemonGenerationSelector({
+    generations: generationOptions,
+
+    activeGenerationId,
+
+    onSelect,
+  });
+
+  generationHost.replaceChildren(selector);
 }
 
 /* =========================================================
@@ -468,8 +675,10 @@ async function executeSearch({
   query,
   search,
   grid,
+  generationGrid,
   searchGrid,
   sentinel,
+  generationSentinel,
   searchSentinel,
   loadMoreButton,
 }) {
@@ -490,11 +699,14 @@ async function executeSearch({
 
     search.setStatus("");
 
-    setSearchMode({
-      active: false,
+    isSearchMode = false;
+
+    updateView({
       grid,
+      generationGrid,
       searchGrid,
       sentinel,
+      generationSentinel,
       searchSentinel,
       loadMoreButton,
     });
@@ -518,11 +730,14 @@ async function executeSearch({
 
   search.setStatus("Buscando Pokémon...");
 
-  setSearchMode({
-    active: true,
+  isSearchMode = true;
+
+  updateView({
     grid,
+    generationGrid,
     searchGrid,
     sentinel,
+    generationSentinel,
     searchSentinel,
     loadMoreButton,
   });
@@ -536,10 +751,6 @@ async function executeSearch({
 
     searchMatches = searchPokemonSpecies(speciesIndex, normalizedQuery);
 
-    /* =====================================================
-       NO RESULTS
-       ===================================================== */
-
     if (searchMatches.length === 0) {
       searchGrid.replaceChildren();
 
@@ -549,10 +760,6 @@ async function executeSearch({
 
       return;
     }
-
-    /* =====================================================
-       FIRST SEARCH BATCH
-       ===================================================== */
 
     await loadSearchBatch({
       search,
@@ -603,7 +810,254 @@ function scheduleSearch(options) {
 }
 
 /* =========================================================
-   LOAD MORE BUTTON
+   GENERATION — LOAD NEXT BATCH
+   ========================================================= */
+
+async function loadGenerationBatch({
+  generationGrid,
+  generationSentinel,
+  loadMoreButton,
+  requestId,
+  controller,
+}) {
+  if (
+    isGenerationLoading ||
+    generationRenderedCount >= generationMatches.length
+  ) {
+    return;
+  }
+
+  isGenerationLoading = true;
+
+  updateGenerationLoadMoreButton(loadMoreButton);
+
+  const batch = generationMatches.slice(
+    generationRenderedCount,
+    generationRenderedCount + GENERATION_BATCH_SIZE,
+  );
+
+  const skeletons = renderSkeletons(generationGrid, batch.length);
+
+  try {
+    const requests = batch.map(({ id }) => {
+      return getPokemon(id, {
+        signal: controller.signal,
+      });
+    });
+
+    const rawPokemonList = await Promise.all(requests);
+
+    if (controller.signal.aborted || requestId !== generationRequestId) {
+      removeSkeletons(skeletons);
+
+      return;
+    }
+
+    const pokemonList = rawPokemonList.map(mapPokemonToCard);
+
+    removeSkeletons(skeletons);
+
+    renderPokemonList(generationGrid, pokemonList);
+
+    generationRenderedCount += pokemonList.length;
+
+    generationSentinel.hidden =
+      generationRenderedCount >= generationMatches.length;
+  } catch (error) {
+    removeSkeletons(skeletons);
+
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    console.error("Erro ao carregar Pokémon da geração:", error);
+  } finally {
+    if (requestId === generationRequestId) {
+      isGenerationLoading = false;
+
+      updateGenerationLoadMoreButton(loadMoreButton);
+    }
+  }
+}
+
+/* =========================================================
+   GENERATION — SELECT
+   ========================================================= */
+
+async function selectGeneration({
+  generation,
+  generationHost,
+  search,
+  grid,
+  generationGrid,
+  searchGrid,
+  sentinel,
+  generationSentinel,
+  searchSentinel,
+  loadMoreButton,
+}) {
+  /* =======================================================
+     CLEAR SEARCH
+     ======================================================= */
+
+  if (search.input.value !== "") {
+    search.setValue("");
+
+    search.setStatus("");
+
+    searchRequestId += 1;
+
+    abortSearchRequest();
+
+    resetSearchState();
+
+    searchGrid.replaceChildren();
+
+    isSearchMode = false;
+  }
+
+  /* =======================================================
+     NATIONAL DEX
+     ======================================================= */
+
+  if (generation.id === NATIONAL_DEX_ID) {
+    generationRequestId += 1;
+
+    abortGenerationRequest();
+
+    resetGenerationState();
+
+    generationGrid.replaceChildren();
+
+    activeGenerationId = NATIONAL_DEX_ID;
+
+    renderGenerationSelector({
+      generationHost,
+
+      onSelect: handleGenerationSelect,
+    });
+
+    updateView({
+      grid,
+      generationGrid,
+      searchGrid,
+      sentinel,
+      generationSentinel,
+      searchSentinel,
+      loadMoreButton,
+    });
+
+    return;
+  }
+
+  /* =======================================================
+     GENERATION
+     ======================================================= */
+
+  activeGenerationId = generation.id;
+
+  generationRequestId += 1;
+
+  const requestId = generationRequestId;
+
+  const controller = createGenerationController();
+
+  resetGenerationState();
+
+  generationGrid.replaceChildren();
+
+  renderGenerationSelector({
+    generationHost,
+
+    onSelect: handleGenerationSelect,
+  });
+
+  updateView({
+    grid,
+    generationGrid,
+    searchGrid,
+    sentinel,
+    generationSentinel,
+    searchSentinel,
+    loadMoreButton,
+  });
+
+  try {
+    const rawGeneration = await getGeneration(generation.id, {
+      signal: controller.signal,
+    });
+
+    if (controller.signal.aborted || requestId !== generationRequestId) {
+      return;
+    }
+
+    const mappedGeneration = mapGenerationDetail(rawGeneration);
+
+    generationMatches = mappedGeneration.species;
+
+    generationGrid.setAttribute(
+      "aria-label",
+      `Pokémon da ${mappedGeneration.label}`,
+    );
+
+    generationSentinel.hidden = generationMatches.length === 0;
+
+    await loadGenerationBatch({
+      generationGrid,
+      generationSentinel,
+      loadMoreButton,
+      requestId,
+      controller,
+    });
+
+    updateView({
+      grid,
+      generationGrid,
+      searchGrid,
+      sentinel,
+      generationSentinel,
+      searchSentinel,
+      loadMoreButton,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    console.error("Erro ao carregar geração:", error);
+  }
+
+  /* =======================================================
+     LOCAL CALLBACK BRIDGE
+     ======================================================= */
+
+  function handleGenerationSelect(selectedGeneration) {
+    selectGeneration({
+      generation: selectedGeneration,
+
+      generationHost,
+
+      search,
+
+      grid,
+
+      generationGrid,
+
+      searchGrid,
+
+      sentinel,
+
+      generationSentinel,
+
+      searchSentinel,
+
+      loadMoreButton,
+    });
+  }
+}
+
+/* =========================================================
+   NATIONAL DEX — LOAD MORE BUTTON
    ========================================================= */
 
 function updateLoadMoreButton(button) {
@@ -617,6 +1071,30 @@ function updateLoadMoreButton(button) {
 
   if (!hasMorePokemon) {
     button.textContent = "Todos os Pokémon carregados";
+
+    return;
+  }
+
+  button.textContent = "Carregar mais";
+}
+
+/* =========================================================
+   GENERATION — LOAD MORE BUTTON
+   ========================================================= */
+
+function updateGenerationLoadMoreButton(button) {
+  const hasMore = generationRenderedCount < generationMatches.length;
+
+  button.disabled = isGenerationLoading || !hasMore;
+
+  if (isGenerationLoading) {
+    button.textContent = "Carregando...";
+
+    return;
+  }
+
+  if (!hasMore) {
+    button.textContent = "Todos da geração carregados";
 
     return;
   }
@@ -641,7 +1119,8 @@ function setupInfiniteScroll(sentinel, onLoadMore) {
         !entry.isIntersecting ||
         isLoading ||
         !hasMorePokemon ||
-        isSearchMode
+        isSearchMode ||
+        isGenerationMode()
       ) {
         return;
       }
@@ -707,6 +1186,43 @@ function setupSearchInfiniteScroll(searchSentinel, onLoadMore) {
 }
 
 /* =========================================================
+   GENERATION — INFINITE SCROLL
+   ========================================================= */
+
+function setupGenerationInfiniteScroll(generationSentinel, onLoadMore) {
+  if (!("IntersectionObserver" in window)) {
+    return;
+  }
+
+  generationObserver = new IntersectionObserver(
+    (entries) => {
+      const [entry] = entries;
+
+      if (
+        !entry.isIntersecting ||
+        isSearchMode ||
+        !isGenerationMode() ||
+        isGenerationLoading ||
+        generationRenderedCount >= generationMatches.length
+      ) {
+        return;
+      }
+
+      onLoadMore();
+    },
+    {
+      root: null,
+
+      rootMargin: "0px 0px 600px 0px",
+
+      threshold: 0,
+    },
+  );
+
+  generationObserver.observe(generationSentinel);
+}
+
+/* =========================================================
    INIT
    ========================================================= */
 
@@ -714,10 +1230,13 @@ async function init() {
   const {
     page,
     grid,
+    generationGrid,
     searchGrid,
     sentinel,
+    generationSentinel,
     searchSentinel,
     loadMoreButton,
+    generationHost,
     search,
   } = createPage();
 
@@ -728,7 +1247,7 @@ async function init() {
      ======================================================= */
 
   async function handleLoadMore() {
-    if (isLoading || !hasMorePokemon || isSearchMode) {
+    if (isLoading || !hasMorePokemon || isSearchMode || isGenerationMode()) {
       return;
     }
 
@@ -767,14 +1286,46 @@ async function init() {
 
       grid,
 
+      generationGrid,
+
       searchGrid,
 
       sentinel,
+
+      generationSentinel,
 
       searchSentinel,
 
       loadMoreButton,
     };
+  }
+
+  /* =======================================================
+     GENERATION SELECT
+     ======================================================= */
+
+  function handleGenerationSelect(generation) {
+    selectGeneration({
+      generation,
+
+      generationHost,
+
+      search,
+
+      grid,
+
+      generationGrid,
+
+      searchGrid,
+
+      sentinel,
+
+      generationSentinel,
+
+      searchSentinel,
+
+      loadMoreButton,
+    });
   }
 
   /* =======================================================
@@ -795,6 +1346,38 @@ async function init() {
     }
 
     scheduleSearch(getSearchOptions());
+  });
+
+  /* =======================================================
+     FALLBACK BUTTON
+     ======================================================= */
+
+  loadMoreButton.addEventListener("click", () => {
+    if (isSearchMode) {
+      return;
+    }
+
+    if (isGenerationMode()) {
+      if (!generationController) {
+        return;
+      }
+
+      loadGenerationBatch({
+        generationGrid,
+
+        generationSentinel,
+
+        loadMoreButton,
+
+        requestId: generationRequestId,
+
+        controller: generationController,
+      });
+
+      return;
+    }
+
+    handleLoadMore();
   });
 
   /* =======================================================
@@ -820,10 +1403,26 @@ async function init() {
   });
 
   /* =======================================================
-     FALLBACK BUTTON
+     GENERATION INFINITE SCROLL
      ======================================================= */
 
-  loadMoreButton.addEventListener("click", handleLoadMore);
+  setupGenerationInfiniteScroll(generationSentinel, () => {
+    if (!generationController) {
+      return;
+    }
+
+    loadGenerationBatch({
+      generationGrid,
+
+      generationSentinel,
+
+      loadMoreButton,
+
+      requestId: generationRequestId,
+
+      controller: generationController,
+    });
+  });
 
   /* =======================================================
      FIRST NATIONAL DEX BATCH
@@ -844,6 +1443,22 @@ async function init() {
   loadPokemonSpeciesIndex().catch((error) => {
     console.error("Erro ao preparar o índice de busca:", error);
   });
+
+  /* =======================================================
+     GENERATIONS
+     ======================================================= */
+
+  try {
+    await loadGenerations();
+
+    renderGenerationSelector({
+      generationHost,
+
+      onSelect: handleGenerationSelect,
+    });
+  } catch (error) {
+    console.error("Erro ao carregar gerações:", error);
+  }
 }
 
 init();

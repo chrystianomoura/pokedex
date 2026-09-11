@@ -87,3 +87,21 @@ export async function getAllPokemonSpecies(options = {}) {
 
   return completeList.results;
 }
+
+/* =========================================================
+   GENERATIONS
+   ========================================================= */
+
+export async function getGenerationList(options = {}) {
+  return request("/generation", options);
+}
+
+export async function getGeneration(idOrName, options = {}) {
+  if (idOrName === undefined || idOrName === null || idOrName === "") {
+    throw new Error("É necessário informar a geração.");
+  }
+
+  const identifier = String(idOrName).trim().toLowerCase();
+
+  return request(`/generation/${encodeURIComponent(identifier)}`, options);
+}
