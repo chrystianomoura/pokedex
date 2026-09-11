@@ -20,6 +20,8 @@ export function mapPokemonToCard(pokemon) {
 
     name: formatPokemonName(pokemon.name),
 
+    slug: pokemon.name,
+
     types: [...pokemon.types]
       .sort((first, second) => {
         return first.slot - second.slot;

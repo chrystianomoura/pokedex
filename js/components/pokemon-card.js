@@ -1,6 +1,10 @@
 import { getPokemonType, getPokemonTypeName } from "../data/pokemon-types.js";
 
 /* =========================================================
+   POKÉDEX — POKÉMON CARD
+   ========================================================= */
+
+/* =========================================================
    TYPE BADGE
    ========================================================= */
 
@@ -24,14 +28,27 @@ function createTypeBadge(type) {
    ROUTE
    ========================================================= */
 
-function createPokemonRouteName(name) {
-  return String(name).trim().toLowerCase().replace(/\s+/g, "-");
+function getPokemonRouteIdentifier(pokemon) {
+  const slug =
+    typeof pokemon?.slug === "string" ? pokemon.slug.trim().toLowerCase() : "";
+
+  if (slug) {
+    return slug;
+  }
+
+  const id = Number(pokemon?.id);
+
+  if (Number.isInteger(id) && id > 0) {
+    return String(id);
+  }
+
+  throw new Error("Não foi possível criar a rota do Pokémon.");
 }
 
 function createPokemonHref(pokemon) {
-  const routeName = createPokemonRouteName(pokemon.name);
+  const identifier = getPokemonRouteIdentifier(pokemon);
 
-  return `/pokemon/${encodeURIComponent(routeName)}`;
+  return `/pokemon/${encodeURIComponent(identifier)}`;
 }
 
 /* =========================================================
