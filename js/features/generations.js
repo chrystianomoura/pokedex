@@ -24,7 +24,9 @@ import { createPokemonGenerationSelector } from "../components/pokemon-generatio
 
 const DEFAULT_BATCH_SIZE = 24;
 
-const DEFAULT_ROOT_MARGIN = "0px 0px 600px 0px";
+const DEFAULT_PREFETCH_DISTANCE = 600;
+
+const DEFAULT_ROOT_MARGIN = `0px 0px ${DEFAULT_PREFETCH_DISTANCE}px 0px`;
 
 const NATIONAL_DEX_ID = 0;
 
@@ -70,6 +72,8 @@ export function createPokemonGenerationsFeature({
   let generationObserver = null;
 
   let generationRequestId = 0;
+
+  let continuationFrame = null;
 
   /* =======================================================
      DATA
@@ -117,10 +121,16 @@ export function createPokemonGenerationsFeature({
     generationRenderedCount = 0;
 
     isGenerationLoading = false;
+
+    cancelContinuationCheck();
   }
 
   function isActive() {
     return activeGenerationId !== NATIONAL_DEX_ID;
+  }
+
+  function hasMorePokemon() {
+    return generationRenderedCount < generationMatches.length;
   }
 
   function notifyModeChange() {
@@ -205,9 +215,12 @@ export function createPokemonGenerationsFeature({
     const generationOptions = [
       {
         id: NATIONAL_DEX_ID,
+
         name: "national-dex",
+
         label: "National Dex",
       },
+
       ...generations,
     ];
 
@@ -227,27 +240,86 @@ export function createPokemonGenerationsFeature({
   }
 
   /* =======================================================
+     LOAD RANGE
+     ======================================================= */
+
+  function isSentinelWithinLoadRange() {
+    if (generationSentinel.hidden) {
+      return false;
+    }
+
+    const rect = generationSentinel.getBoundingClientRect();
+
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+
+    return (
+      rect.top <= viewportHeight + DEFAULT_PREFETCH_DISTANCE && rect.bottom >= 0
+    );
+  }
+
+  function scheduleContinuationCheck({
+    requestId = generationRequestId,
+
+    controller = generationController,
+  } = {}) {
+    cancelContinuationCheck();
+
+    continuationFrame = requestAnimationFrame(() => {
+      continuationFrame = null;
+
+      if (
+        requestId !== generationRequestId ||
+        !controller ||
+        controller.signal.aborted ||
+        searchFeature.isActive ||
+        !isActive() ||
+        isGenerationLoading ||
+        !hasMorePokemon() ||
+        !isSentinelWithinLoadRange()
+      ) {
+        return;
+      }
+
+      void loadNextBatch({
+        requestId,
+        controller,
+      });
+    });
+  }
+
+  function cancelContinuationCheck() {
+    if (continuationFrame === null) {
+      return;
+    }
+
+    cancelAnimationFrame(continuationFrame);
+
+    continuationFrame = null;
+  }
+
+  /* =======================================================
      LOAD NEXT BATCH
      ======================================================= */
 
   async function loadNextBatch({
     requestId = generationRequestId,
+
     controller = generationController,
   } = {}) {
-    if (
-      !controller ||
-      isGenerationLoading ||
-      generationRenderedCount >= generationMatches.length
-    ) {
+    if (!controller || isGenerationLoading || !hasMorePokemon()) {
       return;
     }
 
     isGenerationLoading = true;
 
+    cancelContinuationCheck();
+
     updateLoadMoreButton();
 
     const batch = generationMatches.slice(
       generationRenderedCount,
+
       generationRenderedCount + batchSize,
     );
 
@@ -290,6 +362,11 @@ export function createPokemonGenerationsFeature({
         isGenerationLoading = false;
 
         updateLoadMoreButton();
+
+        scheduleContinuationCheck({
+          requestId,
+          controller,
+        });
       }
     }
   }
@@ -405,7 +482,7 @@ export function createPokemonGenerationsFeature({
       return;
     }
 
-    const hasMore = generationRenderedCount < generationMatches.length;
+    const hasMore = hasMorePokemon();
 
     loadMoreButton.disabled = isGenerationLoading || !hasMore;
 
@@ -429,8 +506,7 @@ export function createPokemonGenerationsFeature({
      ======================================================= */
 
   function updateSentinel() {
-    generationSentinel.hidden =
-      !isActive() || generationRenderedCount >= generationMatches.length;
+    generationSentinel.hidden = !isActive() || !hasMorePokemon();
   }
 
   /* =======================================================
@@ -453,13 +529,14 @@ export function createPokemonGenerationsFeature({
           searchFeature.isActive ||
           !isActive() ||
           isGenerationLoading ||
-          generationRenderedCount >= generationMatches.length
+          !hasMorePokemon()
         ) {
           return;
         }
 
-        loadNextBatch();
+        void loadNextBatch();
       },
+
       {
         root: null,
 
@@ -505,6 +582,8 @@ export function createPokemonGenerationsFeature({
      ======================================================= */
 
   function destroy() {
+    cancelContinuationCheck();
+
     abortGenerationRequest();
 
     stopInfiniteScroll();
@@ -516,9 +595,13 @@ export function createPokemonGenerationsFeature({
 
   return {
     init,
+
     destroy,
+
     loadNextBatch,
+
     updateLoadMoreButton,
+
     updateSentinel,
 
     get isActive() {

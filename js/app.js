@@ -6,6 +6,8 @@ import { createPokemonSearchFeature } from "./features/search.js";
 
 import { createPokemonGenerationsFeature } from "./features/generations.js";
 
+import { createRouter } from "./router/router.js";
+
 /* =========================================================
    POKÉDEX — APP
    ========================================================= */
@@ -15,6 +17,32 @@ const app = document.querySelector("#app");
 if (!app) {
   throw new Error('Elemento "#app" não encontrado.');
 }
+
+/* =========================================================
+   ROUTES
+   ========================================================= */
+
+const routes = [
+  {
+    name: "home",
+    path: "/",
+  },
+
+  {
+    name: "pokemon",
+    path: "/pokemon/:pokemon",
+  },
+];
+
+/* =========================================================
+   ROUTER
+   ========================================================= */
+
+const router = createRouter({
+  routes,
+
+  onRouteChange: handleRouteChange,
+});
 
 /* =========================================================
    FEATURES
@@ -27,10 +55,24 @@ let pokemonSearch = null;
 let pokemonGenerations = null;
 
 /* =========================================================
-   PAGE
+   HOME STATE
    ========================================================= */
 
-function createPage() {
+let homeView = null;
+
+let homeInitializationPromise = null;
+
+const homeNavigationState = {
+  scrollY: 0,
+
+  generationScrollLeft: 0,
+};
+
+/* =========================================================
+   HOME PAGE
+   ========================================================= */
+
+function createHomePage() {
   const page = document.createElement("main");
 
   page.className = "pokedex-page";
@@ -136,7 +178,7 @@ function createPage() {
   searchSentinel.hidden = true;
 
   /* =======================================================
-     LOAD MORE BUTTON
+     LOAD MORE
      ======================================================= */
 
   const loadMoreButton = document.createElement("button");
@@ -164,23 +206,32 @@ function createPage() {
 
   return {
     page,
+
     grid,
+
     generationGrid,
+
     searchGrid,
+
     sentinel,
+
     generationSentinel,
+
     searchSentinel,
+
     loadMoreButton,
+
     generationHost,
+
     search,
   };
 }
 
 /* =========================================================
-   VIEW
+   HOME VIEW
    ========================================================= */
 
-function updateView({
+function updateHomeView({
   grid,
   generationGrid,
   searchGrid,
@@ -203,6 +254,8 @@ function updateView({
     sentinel.hidden = true;
 
     generationSentinel.hidden = true;
+
+    searchSentinel.hidden = false;
 
     loadMoreButton.hidden = true;
 
@@ -256,37 +309,58 @@ function updateView({
 }
 
 /* =========================================================
-   INIT
+   HOME INITIALIZATION
    ========================================================= */
 
-async function init() {
-  const {
-    page,
-    grid,
-    generationGrid,
-    searchGrid,
-    sentinel,
-    generationSentinel,
-    searchSentinel,
-    loadMoreButton,
-    generationHost,
-    search,
-  } = createPage();
+function initializeHome() {
+  if (!homeInitializationPromise) {
+    homeInitializationPromise = initializeHomeFeatures();
+  }
 
-  app.replaceChildren(page);
+  return homeInitializationPromise;
+}
+
+async function initializeHomeFeatures() {
+  homeView = createHomePage();
+
+  const {
+    grid,
+
+    generationGrid,
+
+    searchGrid,
+
+    sentinel,
+
+    generationSentinel,
+
+    searchSentinel,
+
+    loadMoreButton,
+
+    generationHost,
+
+    search,
+  } = homeView;
 
   /* =======================================================
      VIEW CALLBACK
      ======================================================= */
 
   function handleModeChange() {
-    updateView({
+    updateHomeView({
       grid,
+
       generationGrid,
+
       searchGrid,
+
       sentinel,
+
       generationSentinel,
+
       searchSentinel,
+
       loadMoreButton,
     });
   }
@@ -344,7 +418,7 @@ async function init() {
   });
 
   /* =======================================================
-     LOAD MORE BUTTON
+     LOAD MORE
      ======================================================= */
 
   loadMoreButton.addEventListener("click", () => {
@@ -362,7 +436,7 @@ async function init() {
   });
 
   /* =======================================================
-     FEATURES INIT
+     FEATURE INIT
      ======================================================= */
 
   pokemonSearch.init();
@@ -379,7 +453,217 @@ async function init() {
 }
 
 /* =========================================================
+   HOME NAVIGATION STATE
+   ========================================================= */
+
+function saveHomeNavigationState() {
+  if (!homeView) {
+    return;
+  }
+
+  homeNavigationState.scrollY = window.scrollY;
+
+  const generationList = homeView.generationHost.querySelector(
+    ".pokemon-generation__list",
+  );
+
+  homeNavigationState.generationScrollLeft = generationList?.scrollLeft ?? 0;
+}
+
+function restoreHomeNavigationState() {
+  if (!homeView) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    if (router.currentRoute?.name !== "home") {
+      return;
+    }
+
+    const generationList = homeView.generationHost.querySelector(
+      ".pokemon-generation__list",
+    );
+
+    if (generationList) {
+      generationList.scrollLeft = homeNavigationState.generationScrollLeft;
+    }
+
+    window.scrollTo({
+      top: homeNavigationState.scrollY,
+      left: 0,
+      behavior: "instant",
+    });
+  });
+}
+
+/* =========================================================
+   HOME MOUNT
+   ========================================================= */
+
+async function mountHome() {
+  await initializeHome();
+
+  /*
+   * A inicialização da Home é assíncrona.
+   *
+   * Durante os awaits acima, a rota pode ter mudado.
+   * Nesse caso, esta renderização ficou obsoleta e não deve
+   * substituir a página correspondente à rota atual.
+   */
+
+  if (router.currentRoute?.name !== "home") {
+    return;
+  }
+
+  app.replaceChildren(homeView.page);
+
+  updateHomeView({
+    grid: homeView.grid,
+
+    generationGrid: homeView.generationGrid,
+
+    searchGrid: homeView.searchGrid,
+
+    sentinel: homeView.sentinel,
+
+    generationSentinel: homeView.generationSentinel,
+
+    searchSentinel: homeView.searchSentinel,
+
+    loadMoreButton: homeView.loadMoreButton,
+  });
+
+  document.title = "Pokédex";
+
+  restoreHomeNavigationState();
+}
+
+/* =========================================================
+   POKÉMON ROUTE
+   ========================================================= */
+
+function mountPokemonRoute(route) {
+  saveHomeNavigationState();
+
+  const pokemon = route.params.pokemon;
+
+  const page = document.createElement("main");
+
+  page.className = "pokedex-page";
+
+  /* =======================================================
+     TITLE
+     ======================================================= */
+
+  const title = document.createElement("h1");
+
+  title.className = "pokedex-page__title";
+
+  title.textContent = formatPokemonRouteName(pokemon);
+
+  /* =======================================================
+     BACK
+     ======================================================= */
+
+  const backLink = document.createElement("a");
+
+  backLink.href = "/";
+
+  backLink.textContent = "Voltar para a Pokédex";
+
+  /* =======================================================
+     ASSEMBLY
+     ======================================================= */
+
+  page.append(title, backLink);
+
+  app.replaceChildren(page);
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "instant",
+  });
+
+  document.title = `${formatPokemonRouteName(pokemon)} | Pokédex`;
+}
+
+/* =========================================================
+   NOT FOUND
+   ========================================================= */
+
+function mountNotFound() {
+  saveHomeNavigationState();
+
+  const page = document.createElement("main");
+
+  page.className = "pokedex-page";
+
+  const title = document.createElement("h1");
+
+  title.className = "pokedex-page__title";
+
+  title.textContent = "Página não encontrada";
+
+  const backLink = document.createElement("a");
+
+  backLink.href = "/";
+
+  backLink.textContent = "Voltar para a Pokédex";
+
+  page.append(title, backLink);
+
+  app.replaceChildren(page);
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "instant",
+  });
+
+  document.title = "Página não encontrada | Pokédex";
+}
+
+/* =========================================================
+   ROUTE CHANGE
+   ========================================================= */
+
+function handleRouteChange(route) {
+  switch (route.name) {
+    case "home":
+      void mountHome();
+
+      break;
+
+    case "pokemon":
+      mountPokemonRoute(route);
+
+      break;
+
+    default:
+      mountNotFound();
+  }
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function formatPokemonRouteName(pokemon) {
+  if (!pokemon) {
+    return "Pokémon";
+  }
+
+  return pokemon
+    .split("-")
+    .map((word) => {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
+/* =========================================================
    START
    ========================================================= */
 
-init();
+router.start();
