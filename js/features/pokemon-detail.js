@@ -1,5 +1,7 @@
 import { getPokemon, getPokemonSpecies } from "../api/pokeapi.js";
 
+import { getPokemonDescriptionPtBr } from "../api/pokemon-descriptions.js";
+
 import { mapPokemonDetail } from "../services/pokemon-detail.js";
 
 import {
@@ -103,10 +105,23 @@ export function createPokemonDetailFeature({ host } = {}) {
       }
 
       /* ===================================================
+         PT-BR DESCRIPTION
+         =================================================== */
+
+      const descriptionPtBr = await loadPokemonDescriptionPtBr(
+        rawSpecies,
+        currentController,
+      );
+
+      if (!isCurrentRequest(currentRequestId, currentController)) {
+        return null;
+      }
+
+      /* ===================================================
          MAP
          =================================================== */
 
-      const pokemon = mapPokemonDetail(rawPokemon, rawSpecies);
+      const pokemon = mapPokemonDetail(rawPokemon, rawSpecies, descriptionPtBr);
 
       currentPokemon = pokemon;
 
@@ -248,6 +263,31 @@ export function createPokemonDetailFeature({ host } = {}) {
 }
 
 /* =========================================================
+   PT-BR DESCRIPTION
+   ========================================================= */
+
+async function loadPokemonDescriptionPtBr(species, controller) {
+  const speciesId = getCanonicalSpeciesId(species);
+
+  try {
+    return await getPokemonDescriptionPtBr(speciesId, {
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw error;
+    }
+
+    console.warn(
+      `Descrição PT-BR indisponível para o Pokémon #${String(speciesId).padStart(4, "0")}:`,
+      error,
+    );
+
+    return null;
+  }
+}
+
+/* =========================================================
    CANONICAL SPECIES
    ========================================================= */
 
@@ -261,6 +301,16 @@ function getCanonicalSpeciesIdentifier(pokemon) {
   }
 
   return String(speciesName).trim().toLowerCase();
+}
+
+function getCanonicalSpeciesId(species) {
+  const speciesId = Number(species?.id);
+
+  if (!Number.isInteger(speciesId) || speciesId <= 0) {
+    throw new Error("Não foi possível identificar o ID da espécie canônica.");
+  }
+
+  return speciesId;
 }
 
 /* =========================================================

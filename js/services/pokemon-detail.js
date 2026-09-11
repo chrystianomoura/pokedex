@@ -2,11 +2,14 @@
    POKÉDEX — POKÉMON DETAIL SERVICE
    ========================================================= */
 
+const DESCRIPTION_UNAVAILABLE =
+  "Descrição em português temporariamente indisponível.";
+
 /* =========================================================
    DETAIL
    ========================================================= */
 
-export function mapPokemonDetail(pokemon, species) {
+export function mapPokemonDetail(pokemon, species, descriptionPtBr) {
   if (!pokemon) {
     throw new Error("Dados do Pokémon não informados.");
   }
@@ -17,14 +20,20 @@ export function mapPokemonDetail(pokemon, species) {
 
   const types = getPokemonTypes(pokemon.types);
 
+  const speciesId = getSpeciesId(species, pokemon);
+
   return {
     id: pokemon.id,
 
-    number: formatPokemonNumber(pokemon.id),
+    speciesId,
+
+    number: formatPokemonNumber(speciesId),
 
     name: formatPokemonName(pokemon.name),
 
     slug: pokemon.name,
+
+    speciesSlug: species.name,
 
     types,
 
@@ -38,10 +47,30 @@ export function mapPokemonDetail(pokemon, species) {
 
     weight: formatPokemonWeight(pokemon.weight),
 
-    description: getPokemonDescription(species),
+    description: normalizePokemonDescription(descriptionPtBr),
 
     evolutionChainId: getEvolutionChainId(species),
   };
+}
+
+/* =========================================================
+   SPECIES
+   ========================================================= */
+
+function getSpeciesId(species, pokemon) {
+  const speciesId = Number(species?.id);
+
+  if (Number.isInteger(speciesId) && speciesId > 0) {
+    return speciesId;
+  }
+
+  const pokemonId = Number(pokemon?.id);
+
+  if (Number.isInteger(pokemonId) && pokemonId > 0) {
+    return pokemonId;
+  }
+
+  throw new Error("Não foi possível identificar o número da espécie.");
 }
 
 /* =========================================================
@@ -87,39 +116,11 @@ function getPokemonShinyArtwork(pokemon) {
    DESCRIPTION
    ========================================================= */
 
-function getPokemonDescription(species) {
-  const entries = species.flavor_text_entries;
-
-  if (!Array.isArray(entries) || entries.length === 0) {
-    return "";
+function normalizePokemonDescription(description) {
+  if (typeof description !== "string" || !description.trim()) {
+    return DESCRIPTION_UNAVAILABLE;
   }
 
-  const preferredLanguages = ["pt-br", "pt", "en"];
-
-  for (const language of preferredLanguages) {
-    const entry = entries.find((item) => {
-      return item?.language?.name?.toLowerCase() === language;
-    });
-
-    if (entry?.flavor_text) {
-      return normalizeDescription(entry.flavor_text);
-    }
-  }
-
-  const firstAvailableEntry = entries.find((entry) => {
-    return Boolean(entry?.flavor_text);
-  });
-
-  return firstAvailableEntry
-    ? normalizeDescription(firstAvailableEntry.flavor_text)
-    : "";
-}
-
-/* =========================================================
-   DESCRIPTION NORMALIZATION
-   ========================================================= */
-
-function normalizeDescription(description) {
   return String(description)
     .replace(/[\n\f\r]+/g, " ")
     .replace(/\s+/g, " ")
