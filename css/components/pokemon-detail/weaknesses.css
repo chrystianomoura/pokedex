@@ -202,12 +202,22 @@
    ========================================================= */
 
 @media (min-width: 900px) {
+  /*
+   * A aba não possui mais um título interno.
+   * Quando Fraquezas estiver ativa, a navegação pode ficar
+   * mais próxima do conteúdo real da aba.
+   */
+  .pokemon-detail__content:has(.pokemon-detail__weaknesses:not([hidden]))
+    .pokemon-detail__section-navigation {
+    margin-bottom: 6px;
+  }
+
   .pokemon-detail__weakness-list {
     max-width: 640px;
 
     gap: 30px 34px;
 
-    padding-top: 16px;
+    padding-top: 4px;
   }
 
   .pokemon-detail__weakness {

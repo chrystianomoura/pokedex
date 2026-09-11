@@ -354,10 +354,6 @@
   cursor: not-allowed;
 }
 
-/* =========================================================
-   VARIANT FOCUS
-   ========================================================= */
-
 .pokemon-detail__variant-button:focus-visible {
   outline: 2px solid var(--color-text);
 
@@ -391,10 +387,6 @@
 
   pointer-events: none;
 }
-
-/* =========================================================
-   ARTWORK BACKGROUND
-   ========================================================= */
 
 .pokemon-detail__artwork-background {
   display: none;
@@ -584,102 +576,199 @@
    ========================================================= */
 
 @media (min-width: 900px) {
-  .pokemon-detail__hero {
-    min-height: 610px;
+  /*
+   * O detalhe inteiro precisa caber na viewport quando
+   * a aba ativa for compacta, como Sobre ou Fraquezas.
+   *
+   * Aproximadamente 350px ficam reservados para:
+   * - padding vertical da página
+   * - sobreposição entre hero e card
+   * - navegação das abas
+   * - conteúdo da aba Sobre
+   * - fatos
+   */
+  .pokemon-detail {
+    width: min(100%, 640px);
 
-    grid-template-columns:
-      minmax(0, 0.88fr)
-      minmax(0, 1.12fr);
+    margin: 0 auto;
+  }
+
+  .pokemon-detail__hero {
+    height: clamp(330px, calc(100svh - 350px), 430px);
+
+    min-height: 0;
+
+    grid-template-columns: minmax(0, 1fr);
 
     grid-template-rows:
       auto
-      1fr;
+      auto
+      auto
+      minmax(0, 1fr);
 
-    padding: 14px 18px 0;
+    padding: 8px 12px 0;
   }
 
+  /* =======================================================
+     TOPBAR
+     ======================================================= */
+
   .pokemon-detail__topbar {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 1;
   }
 
-  .pokemon-detail__identity {
-    align-self: center;
+  .pokemon-detail__back {
+    min-height: 36px;
 
-    align-items: flex-start;
+    padding: 7px 11px 7px 7px;
+
+    font-size: 0.73rem;
+  }
+
+  .pokemon-detail__back-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .pokemon-detail__back-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .pokemon-detail__favorite {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pokemon-detail__favorite svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  /* =======================================================
+     IDENTITY
+     ======================================================= */
+
+  .pokemon-detail__identity {
+    align-self: start;
+
+    align-items: center;
 
     grid-column: 1;
     grid-row: 2;
 
-    padding: 8px 0 72px 24px;
+    padding: 12px 8px 0;
 
-    text-align: left;
+    text-align: center;
   }
 
   .pokemon-detail__number {
-    margin-bottom: 13px;
+    margin-bottom: 6px;
 
-    font-size: 1.16rem;
+    font-size: 0.8rem;
+
+    letter-spacing: 0.075em;
   }
 
   .pokemon-detail__name {
-    font-size: clamp(4.8rem, 7vw, 6.6rem);
+    max-width: 100%;
+
+    font-size: clamp(2.75rem, 4vw, 3.45rem);
+
+    line-height: 0.92;
+
+    letter-spacing: -0.06em;
+
+    overflow-wrap: normal;
+
+    word-break: normal;
+
+    hyphens: none;
   }
 
   .pokemon-detail__types {
-    justify-content: flex-start;
+    justify-content: center;
 
-    margin-top: 24px;
+    gap: 7px;
+
+    margin-top: 10px;
   }
+
+  .pokemon-detail__type {
+    min-height: 28px;
+
+    padding: 6px 11px;
+
+    font-size: 0.65rem;
+  }
+
+  /* =======================================================
+     VARIANT
+     ======================================================= */
 
   .pokemon-detail__variant-control {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
 
-    align-self: end;
-    justify-self: start;
+    align-self: start;
+    justify-self: center;
 
-    width: 168px;
+    width: 150px;
 
-    margin: 0 0 28px 24px;
+    margin-top: 10px;
   }
 
   .pokemon-detail__variant-button {
-    min-height: 35px;
+    min-height: 30px;
 
-    font-size: 0.72rem;
+    padding-inline: 10px;
+
+    font-size: 0.66rem;
   }
 
   .pokemon-detail__skeleton-variant-control {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
 
-    align-self: end;
-    justify-self: start;
+    align-self: start;
+    justify-self: center;
 
-    width: 168px;
-    height: 41px;
+    width: 150px;
+    height: 36px;
 
-    margin: 0 0 28px 24px;
+    margin-top: 10px;
   }
+
+  /* =======================================================
+     ARTWORK
+     ======================================================= */
 
   .pokemon-detail__artwork {
     align-self: stretch;
 
-    grid-column: 2;
-    grid-row: 2;
+    align-items: flex-end;
 
-    min-height: 500px;
+    grid-column: 1;
+    grid-row: 4;
 
-    margin-top: 0;
+    min-height: 0;
+
+    margin-top: 2px;
   }
 
   .pokemon-detail__image {
-    width: min(94%, 500px);
+    width: auto;
+    height: clamp(165px, 27svh, 220px);
 
-    max-height: 500px;
+    max-width: 52%;
+    max-height: none;
 
-    transform: translateY(70px);
+    object-fit: contain;
+
+    transform: translateY(18px);
+
+    filter: drop-shadow(0 16px 17px rgba(23, 25, 28, 0.13));
   }
 }
 
@@ -688,17 +777,153 @@
    ========================================================= */
 
 @media (min-width: 1180px) {
+  .pokemon-detail {
+    width: min(100%, 660px);
+  }
+
   .pokemon-detail__hero {
-    min-height: 630px;
+    height: clamp(340px, calc(100svh - 350px), 430px);
   }
 
   .pokemon-detail__name {
-    font-size: clamp(5rem, 6.5vw, 7rem);
+    font-size: clamp(2.9rem, 3.4vw, 3.6rem);
   }
 
-  .pokemon-detail__variant-control,
+  .pokemon-detail__image {
+    height: clamp(175px, 26svh, 230px);
+
+    max-width: 50%;
+  }
+}
+
+/* =========================================================
+   SHORT DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) and (max-height: 760px) {
+  /*
+   * O content.css e o facts.css também ficam mais compactos
+   * neste intervalo.
+   *
+   * Por isso a reserva cai para aproximadamente 320px.
+   */
+  .pokemon-detail {
+    width: min(100%, 600px);
+  }
+
+  .pokemon-detail__hero {
+    height: clamp(280px, calc(100svh - 320px), 380px);
+
+    padding-top: 6px;
+  }
+
+  .pokemon-detail__back {
+    min-height: 34px;
+
+    padding-block: 6px;
+  }
+
+  .pokemon-detail__favorite {
+    width: 34px;
+    height: 34px;
+  }
+
+  .pokemon-detail__favorite svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .pokemon-detail__identity {
+    padding-top: 5px;
+  }
+
+  .pokemon-detail__number {
+    margin-bottom: 4px;
+
+    font-size: 0.72rem;
+  }
+
+  .pokemon-detail__name {
+    font-size: clamp(2.35rem, 3.5vw, 2.85rem);
+  }
+
+  .pokemon-detail__types {
+    gap: 6px;
+
+    margin-top: 7px;
+  }
+
+  .pokemon-detail__type {
+    min-height: 25px;
+
+    padding: 5px 10px;
+
+    font-size: 0.6rem;
+  }
+
+  .pokemon-detail__variant-control {
+    width: 142px;
+
+    margin-top: 6px;
+
+    padding: 2px;
+  }
+
+  .pokemon-detail__variant-button {
+    min-height: 27px;
+
+    font-size: 0.62rem;
+  }
+
   .pokemon-detail__skeleton-variant-control {
-    margin-bottom: 34px;
+    width: 142px;
+    height: 31px;
+
+    margin-top: 6px;
+  }
+
+  .pokemon-detail__artwork {
+    margin-top: 0;
+  }
+
+  .pokemon-detail__image {
+    height: clamp(145px, 25svh, 190px);
+
+    max-width: 48%;
+
+    transform: translateY(16px);
+  }
+}
+
+/* =========================================================
+   VERY SHORT DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) and (max-height: 650px) {
+  .pokemon-detail__hero {
+    height: clamp(260px, calc(100svh - 305px), 330px);
+  }
+
+  .pokemon-detail__identity {
+    padding-top: 2px;
+  }
+
+  .pokemon-detail__name {
+    font-size: clamp(2.1rem, 3.2vw, 2.55rem);
+  }
+
+  .pokemon-detail__types {
+    margin-top: 5px;
+  }
+
+  .pokemon-detail__variant-control {
+    margin-top: 4px;
+  }
+
+  .pokemon-detail__image {
+    height: clamp(125px, 23svh, 165px);
+
+    transform: translateY(14px);
   }
 }
 

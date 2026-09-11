@@ -676,10 +676,6 @@ function createAboutSection(pokemon) {
     active: true,
   });
 
-  const header = createSectionHeader({
-    title: "Sobre",
-  });
-
   const description = document.createElement("p");
 
   description.className = "pokemon-detail__description";
@@ -688,7 +684,7 @@ function createAboutSection(pokemon) {
 
   const facts = createFacts(pokemon);
 
-  section.append(header, description, facts);
+  section.append(description, facts);
 
   return section;
 }
@@ -706,10 +702,6 @@ function createWeaknessesSection(pokemon) {
     className: "pokemon-detail__weaknesses",
   });
 
-  const header = createSectionHeader({
-    title: "Fraquezas",
-  });
-
   const weaknesses = Array.isArray(pokemon.weaknesses)
     ? pokemon.weaknesses
     : [];
@@ -721,7 +713,7 @@ function createWeaknessesSection(pokemon) {
 
     empty.textContent = "Nenhuma fraqueza de tipo encontrada.";
 
-    section.append(header, empty);
+    section.append(empty);
 
     return section;
   }
@@ -736,7 +728,7 @@ function createWeaknessesSection(pokemon) {
     list.append(createWeaknessItem(weakness));
   });
 
-  section.append(header, list);
+  section.append(list);
 
   return section;
 }
@@ -802,10 +794,6 @@ function createEvolutionSection(pokemon) {
     className: "pokemon-detail__evolution",
   });
 
-  const header = createSectionHeader({
-    title: "Evolução",
-  });
-
   const evolution = pokemon.evolution;
 
   if (!evolution) {
@@ -813,7 +801,7 @@ function createEvolutionSection(pokemon) {
       "Dados de evolução temporariamente indisponíveis.",
     );
 
-    section.append(header, empty);
+    section.append(empty);
 
     return section;
   }
@@ -821,7 +809,7 @@ function createEvolutionSection(pokemon) {
   if (isSingleStageEvolution(evolution)) {
     const message = createEvolutionEmpty("Este Pokémon não evolui.");
 
-    section.append(header, message);
+    section.append(message);
 
     return section;
   }
@@ -845,7 +833,7 @@ function createEvolutionSection(pokemon) {
 
   tree.append(createEvolutionNode(evolution, currentSpeciesId, 0));
 
-  section.append(header, tree);
+  section.append(tree);
 
   return section;
 }
@@ -1087,26 +1075,6 @@ function createTabPanel({
 }
 
 /* =========================================================
-   SECTION HEADER
-   ========================================================= */
-
-function createSectionHeader({ title }) {
-  const header = document.createElement("div");
-
-  header.className = "pokemon-detail__section-header";
-
-  const heading = document.createElement("h2");
-
-  heading.className = "pokemon-detail__section-title";
-
-  heading.textContent = title;
-
-  header.append(heading);
-
-  return header;
-}
-
-/* =========================================================
    FACTS
    ========================================================= */
 
@@ -1244,8 +1212,6 @@ export function createPokemonDetailSkeleton() {
   about.className = "pokemon-detail__section pokemon-detail__about";
 
   about.append(
-    createSkeletonBlock("pokemon-detail__skeleton-section-title"),
-
     createSkeletonBlock("pokemon-detail__skeleton-description"),
 
     createSkeletonBlock("pokemon-detail__skeleton-facts"),
