@@ -1,27 +1,9 @@
-/* =========================================================
-   POKÉDEX — POKÉMON SEARCH SERVICE
-   ========================================================= */
-
 const MAX_POKEMON_NUMBER_LENGTH = 4;
 
 /* =========================================================
-   NORMALIZATION
+   NORMALIZE QUERY
    ========================================================= */
 
-/**
- * Normaliza o texto digitado pelo usuário.
- *
- * Exemplos válidos:
- *
- * "Pikachu" -> "pikachu"
- * " PIKA "  -> "pika"
- * "25"      -> "25"
- * "025"     -> "025"
- * "#025"    -> "025"
- *
- * O zero à esquerda é preservado nesta etapa para podermos
- * validar o tamanho original da pesquisa numérica.
- */
 export function normalizePokemonSearchQuery(query) {
   if (query === null || query === undefined) {
     return "";
@@ -33,8 +15,37 @@ export function normalizePokemonSearchQuery(query) {
     return "";
   }
 
-  if (normalizedQuery.startsWith("#")) {
+  /*
+   * Permitimos apenas um único "#" opcional
+   * antes de uma pesquisa numérica.
+   *
+   * Exemplos válidos:
+   * 25
+   * 025
+   * 0025
+   * #25
+   * #025
+   * #0025
+   *
+   * Exemplos inválidos:
+   * ##25
+   * ###25
+   * #pikachu
+   */
+  if (/^#\d+$/.test(normalizedQuery)) {
     return normalizedQuery.slice(1);
+  }
+
+  /*
+   * Se existir qualquer "#" que não corresponda
+   * ao formato acima, mantemos a string intacta.
+   *
+   * Isso é importante porque a query pode passar
+   * pela normalização mais de uma vez sem transformar
+   * "##999" em "#999" e depois em "999".
+   */
+  if (normalizedQuery.includes("#")) {
+    return normalizedQuery;
   }
 
   return normalizedQuery;
@@ -54,17 +65,6 @@ export function isPokemonNumberSearch(query) {
    SEARCH
    ========================================================= */
 
-/**
- * Procura correspondências dentro de uma lista
- * de referências de espécies.
- *
- * Formato esperado:
- *
- * {
- *   id: 25,
- *   name: "pikachu"
- * }
- */
 export function searchPokemonSpecies(speciesList, query) {
   const normalizedQuery = normalizePokemonSearchQuery(query);
 
@@ -77,7 +77,15 @@ export function searchPokemonSpecies(speciesList, query) {
   }
 
   /* =======================================================
-     NUMERIC SEARCH
+     INVALID HASH
+     ======================================================= */
+
+  if (normalizedQuery.includes("#")) {
+    return [];
+  }
+
+  /* =======================================================
+     NUMBER
      ======================================================= */
 
   if (isNumericSearch(normalizedQuery)) {
@@ -97,7 +105,7 @@ export function searchPokemonSpecies(speciesList, query) {
   }
 
   /* =======================================================
-     NAME SEARCH
+     NAME
      ======================================================= */
 
   return speciesList.filter((pokemon) => {
@@ -106,7 +114,7 @@ export function searchPokemonSpecies(speciesList, query) {
 }
 
 /* =========================================================
-   INTERNAL HELPERS
+   HELPERS
    ========================================================= */
 
 function isNumericSearch(value) {

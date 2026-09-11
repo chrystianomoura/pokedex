@@ -25,7 +25,7 @@ export function createPokemonGenerationSelector({
 
   title.className = "pokemon-generation__title";
 
-  title.textContent = "Gerações";
+  title.textContent = "Gerações:";
 
   header.append(title);
 
