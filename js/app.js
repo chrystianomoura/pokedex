@@ -138,12 +138,8 @@ function createHomePage() {
   header.className = "pokedex-page__header";
 
   /* =======================================================
-     TITLE ROW
+     TITLE
      ======================================================= */
-
-  const titleRow = document.createElement("div");
-
-  titleRow.className = "pokedex-page__title-row";
 
   const title = document.createElement("h1");
 
@@ -151,15 +147,19 @@ function createHomePage() {
 
   title.textContent = "Pokédex";
 
-  const favoritesLink = createFavoritesLink();
-
-  titleRow.append(title, favoritesLink);
-
   /* =======================================================
-     SEARCH
+     SEARCH ROW
      ======================================================= */
 
+  const searchRow = document.createElement("div");
+
+  searchRow.className = "pokedex-page__search-row";
+
   const search = createPokemonSearch();
+
+  const favoritesLink = createFavoritesLink();
+
+  searchRow.append(search.element, favoritesLink);
 
   /* =======================================================
      FILTERS
@@ -179,7 +179,7 @@ function createHomePage() {
 
   generationHost.className = "pokedex-page__generations";
 
-  header.append(titleRow, search.element, filters.element, generationHost);
+  header.append(title, searchRow, filters.element, generationHost);
 
   /* =======================================================
      NATIONAL DEX GRID
@@ -825,6 +825,40 @@ async function initializeHomeFeatures() {
   }
 
   /* =======================================================
+     SEARCH MODE CALLBACK
+     ======================================================= */
+
+  function handleSearchModeChange(isSearchActive) {
+    handleModeChange();
+
+    if (isSearchActive) {
+      return;
+    }
+
+    /*
+     * A Search Feature pode ser suspensa durante uma troca
+     * de geração.
+     *
+     * Esperamos o restante da operação síncrona terminar
+     * antes de decidir se a grade da geração precisa ser
+     * retomada.
+     */
+
+    queueMicrotask(() => {
+      if (
+        filters.isActive ||
+        pokemonSearch?.isActive ||
+        !pokemonGenerations?.isActive ||
+        pokemonGenerations.renderedPokemon > 0
+      ) {
+        return;
+      }
+
+      void pokemonGenerations.resume();
+    });
+  }
+
+  /* =======================================================
      FILTERS FEATURE
      ======================================================= */
 
@@ -853,7 +887,7 @@ async function initializeHomeFeatures() {
 
     searchSentinel,
 
-    onModeChange: handleModeChange,
+    onModeChange: handleSearchModeChange,
 
     shouldDelegateSearch: () => {
       return filters.isActive;
@@ -861,6 +895,10 @@ async function initializeHomeFeatures() {
 
     onDelegatedSearch: (query) => {
       void handleDelegatedPokemonSearch(query);
+    },
+
+    getSearchScopeIds: () => {
+      return pokemonGenerations?.getSearchScopeIds() ?? null;
     },
   });
 
@@ -930,8 +968,8 @@ async function initializeHomeFeatures() {
 
   loadMoreButton.addEventListener("click", () => {
     /* ===================================================
-         FILTERS
-         =================================================== */
+       FILTERS
+       =================================================== */
 
     if (pokemonFilters.isActive) {
       void pokemonFilters.loadNextBatch();
@@ -940,16 +978,16 @@ async function initializeHomeFeatures() {
     }
 
     /* ===================================================
-         SEARCH
-         =================================================== */
+       SEARCH
+       =================================================== */
 
     if (pokemonSearch.isActive) {
       return;
     }
 
     /* ===================================================
-         GENERATION
-         =================================================== */
+       GENERATION
+       =================================================== */
 
     if (pokemonGenerations.isActive) {
       void pokemonGenerations.loadNextBatch();
@@ -958,8 +996,8 @@ async function initializeHomeFeatures() {
     }
 
     /* ===================================================
-         NATIONAL DEX
-         =================================================== */
+       NATIONAL DEX
+       =================================================== */
 
     void nationalDex.loadMore();
   });

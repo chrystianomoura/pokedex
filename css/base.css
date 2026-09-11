@@ -152,6 +152,10 @@ p {
   margin-bottom: 20px;
 }
 
+/* =========================================================
+   TITLE
+   ========================================================= */
+
 .pokedex-page__title {
   width: 100%;
 
@@ -168,6 +172,31 @@ p {
   letter-spacing: -0.055em;
 
   text-align: center;
+}
+
+/* =========================================================
+   SEARCH ROW
+   ========================================================= */
+
+.pokedex-page__search-row {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+
+  gap: 10px;
+
+  margin: 0 auto;
+}
+
+.pokedex-page__search-row .pokemon-search {
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  margin: 0;
 }
 
 /* =========================================================
@@ -189,6 +218,12 @@ p {
    ========================================================= */
 
 @media (min-width: 600px) {
+  .pokedex-page__search-row {
+    width: min(100%, 574px);
+
+    gap: 12px;
+  }
+
   .pokemon-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 
@@ -201,6 +236,10 @@ p {
    ========================================================= */
 
 @media (min-width: 900px) {
+  .pokedex-page__search-row {
+    width: min(100%, 614px);
+  }
+
   .pokemon-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 
@@ -211,5 +250,15 @@ p {
 @media (min-width: 1180px) {
   .pokemon-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 359px) {
+  .pokedex-page__search-row {
+    gap: 8px;
   }
 }

@@ -372,6 +372,73 @@ export function createPokemonGenerationsFeature({
   }
 
   /* =======================================================
+     SEARCH SCOPE
+     ======================================================= */
+
+  function hasSearchQuery() {
+    return search.input.value.trim() !== "";
+  }
+
+  function getSearchScopeIds() {
+    if (!isActive()) {
+      return null;
+    }
+
+    return new Set(
+      generationMatches.map((pokemon) => {
+        return pokemon.id;
+      }),
+    );
+  }
+
+  function suspendSearchForGenerationChange() {
+    if (!hasSearchQuery()) {
+      return;
+    }
+
+    searchFeature.suspend({
+      clearStatus: false,
+    });
+
+    search.setStatus("Buscando Pokémon...");
+  }
+
+  async function refreshSearchForCurrentGeneration() {
+    if (!hasSearchQuery()) {
+      return false;
+    }
+
+    await searchFeature.executeSearch(search.input.value);
+
+    return true;
+  }
+
+  /* =======================================================
+     RESUME GENERATION
+     ======================================================= */
+
+  async function resume() {
+    if (
+      !isActive() ||
+      searchFeature.isActive ||
+      isGenerationLoading ||
+      !hasMorePokemon()
+    ) {
+      return;
+    }
+
+    if (!generationController || generationController.signal.aborted) {
+      return;
+    }
+
+    await loadNextBatch({
+      requestId: generationRequestId,
+
+      controller: generationController,
+    });
+  }
+
+  /* =======================================================
      SELECT GENERATION
      ======================================================= */
 
@@ -380,13 +447,7 @@ export function createPokemonGenerationsFeature({
       return;
     }
 
-    /* =====================================================
-       CLEAR SEARCH
-       ===================================================== */
-
-    if (search.input.value !== "") {
-      searchFeature.clear();
-    }
+    suspendSearchForGenerationChange();
 
     /* =====================================================
        NATIONAL DEX
@@ -410,6 +471,8 @@ export function createPokemonGenerationsFeature({
       updateSentinel();
 
       notifyModeChange();
+
+      await refreshSearchForCurrentGeneration();
 
       return;
     }
@@ -458,10 +521,15 @@ export function createPokemonGenerationsFeature({
 
       updateSentinel();
 
-      await loadNextBatch({
-        requestId,
-        controller,
-      });
+      const searchRefreshed = await refreshSearchForCurrentGeneration();
+
+      if (!searchRefreshed) {
+        await loadNextBatch({
+          requestId,
+
+          controller,
+        });
+      }
 
       notifyModeChange();
     } catch (error) {
@@ -598,11 +666,15 @@ export function createPokemonGenerationsFeature({
 
     destroy,
 
+    resume,
+
     loadNextBatch,
 
     updateLoadMoreButton,
 
     updateSentinel,
+
+    getSearchScopeIds,
 
     get isActive() {
       return isActive();
@@ -660,7 +732,11 @@ function validateElements({
     throw new Error("Generations Feature: componente de busca inválido.");
   }
 
-  if (!searchFeature || typeof searchFeature.clear !== "function") {
+  if (
+    !searchFeature ||
+    typeof searchFeature.suspend !== "function" ||
+    typeof searchFeature.executeSearch !== "function"
+  ) {
     throw new Error("Generations Feature: Search Feature inválida.");
   }
 }

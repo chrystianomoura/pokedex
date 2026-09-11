@@ -47,6 +47,8 @@ export function createPokemonSearchFeature({
   shouldDelegateSearch = null,
 
   onDelegatedSearch = null,
+
+  getSearchScopeIds = null,
 } = {}) {
   validateElements({
     search,
@@ -67,6 +69,8 @@ export function createPokemonSearchFeature({
   validateCallback(shouldDelegateSearch, "shouldDelegateSearch");
 
   validateCallback(onDelegatedSearch, "onDelegatedSearch");
+
+  validateCallback(getSearchScopeIds, "getSearchScopeIds");
 
   /* =======================================================
      STATE — INDEX
@@ -271,6 +275,30 @@ export function createPokemonSearchFeature({
 
       executeDelegatedSearch(query);
     }, debounceTime);
+  }
+
+  /* =======================================================
+     SEARCH SCOPE
+     ======================================================= */
+
+  function getActiveSearchScopeIds() {
+    if (typeof getSearchScopeIds !== "function") {
+      return null;
+    }
+
+    return normalizeSearchScopeIds(getSearchScopeIds());
+  }
+
+  function applySearchScope(pokemonList) {
+    const scopeIds = getActiveSearchScopeIds();
+
+    if (scopeIds === null) {
+      return pokemonList;
+    }
+
+    return pokemonList.filter((pokemon) => {
+      return scopeIds.has(pokemon.id);
+    });
   }
 
   /* =======================================================
@@ -484,11 +512,13 @@ export function createPokemonSearchFeature({
         return;
       }
 
-      searchMatches = searchPokemonSpecies(
+      const matches = searchPokemonSpecies(
         speciesIndex,
 
         normalizedQuery,
       );
+
+      searchMatches = applySearchScope(matches);
 
       if (searchMatches.length === 0) {
         searchGrid.replaceChildren();
@@ -763,6 +793,39 @@ export function createPokemonSearchFeature({
       return searchRenderedCount;
     },
   };
+}
+
+/* =========================================================
+   SEARCH SCOPE NORMALIZATION
+   ========================================================= */
+
+function normalizeSearchScopeIds(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const source =
+    value instanceof Set ? value : Array.isArray(value) ? value : null;
+
+  if (!source) {
+    throw new Error(
+      "Search Feature: escopo de pesquisa deve ser Array, Set ou null.",
+    );
+  }
+
+  const normalizedIds = new Set();
+
+  source.forEach((value) => {
+    const id = Number(value);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return;
+    }
+
+    normalizedIds.add(id);
+  });
+
+  return normalizedIds;
 }
 
 /* =========================================================

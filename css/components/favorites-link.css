@@ -3,37 +3,23 @@
    ========================================================= */
 
 /* =========================================================
-   HOME TITLE ROW
-   ========================================================= */
-
-.pokedex-page__title-row {
-  position: relative;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-}
-
-/* =========================================================
    FAVORITES LINK
    ========================================================= */
 
 .pokedex-favorites-link {
-  position: absolute;
-
-  top: 50%;
-  right: 0;
-
   display: flex;
+
+  flex: 0 0 auto;
 
   align-items: center;
   justify-content: center;
 
+  align-self: flex-start;
+
   width: 40px;
   height: 40px;
+
+  margin-top: 6px;
 
   border: 1px solid rgba(23, 25, 28, 0.08);
 
@@ -46,8 +32,6 @@
   text-decoration: none;
 
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
-
-  transform: translateY(-50%);
 
   transition:
     transform 160ms ease,
@@ -74,7 +58,7 @@
    ========================================================= */
 
 .pokedex-favorites-link:active {
-  transform: translateY(-50%) scale(0.96);
+  transform: scale(0.96);
 }
 
 /* =========================================================
@@ -95,6 +79,8 @@
   .pokedex-favorites-link {
     width: 36px;
     height: 36px;
+
+    margin-top: 6px;
   }
 
   .pokedex-favorites-link svg {
@@ -111,11 +97,23 @@
   .pokedex-favorites-link {
     width: 42px;
     height: 42px;
+
+    margin-top: 6px;
   }
 
   .pokedex-favorites-link svg {
     width: 22px;
     height: 22px;
+  }
+}
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .pokedex-favorites-link {
+    margin-top: 7px;
   }
 }
 
@@ -131,7 +129,7 @@
 
     box-shadow: 0 9px 22px rgba(15, 23, 42, 0.08);
 
-    transform: translateY(-50%) translateY(-2px);
+    transform: translateY(-2px);
   }
 }
 
