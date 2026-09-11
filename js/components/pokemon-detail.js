@@ -28,6 +28,8 @@ export function createPokemonDetail(pokemon) {
 
   article.dataset.primaryType = pokemon.primaryType;
 
+  article.dataset.artworkVariant = "normal";
+
   const primaryType = getPokemonType(pokemon.primaryType);
 
   article.style.setProperty("--primary-type-color", primaryType.color);
@@ -37,6 +39,8 @@ export function createPokemonDetail(pokemon) {
   const content = createContent(pokemon);
 
   article.append(hero, content);
+
+  setupArtworkVariants(article);
 
   setupSectionTabs(article);
 
@@ -56,9 +60,11 @@ function createHero(pokemon) {
 
   const identity = createIdentity(pokemon);
 
+  const variantControl = createArtworkVariantControl(pokemon);
+
   const artwork = createArtwork(pokemon);
 
-  hero.append(topbar, identity, artwork);
+  hero.append(topbar, identity, variantControl, artwork);
 
   return hero;
 }
@@ -268,6 +274,162 @@ function createTypeBadge(type) {
 }
 
 /* =========================================================
+   ARTWORK VARIANT CONTROL
+   ========================================================= */
+
+function createArtworkVariantControl(pokemon) {
+  const control = document.createElement("div");
+
+  control.className = "pokemon-detail__variant-control";
+
+  control.setAttribute("role", "group");
+
+  control.setAttribute("aria-label", "Variação do Pokémon");
+
+  const normalButton = createArtworkVariantButton({
+    label: "Normal",
+
+    variant: "normal",
+
+    active: true,
+  });
+
+  const shinyButton = createArtworkVariantButton({
+    label: "Shiny",
+
+    variant: "shiny",
+
+    disabled: !pokemon.shinyArtwork,
+  });
+
+  control.append(normalButton, shinyButton);
+
+  return control;
+}
+
+function createArtworkVariantButton({
+  label,
+
+  variant,
+
+  active = false,
+
+  disabled = false,
+}) {
+  const button = document.createElement("button");
+
+  button.className = "pokemon-detail__variant-button";
+
+  button.type = "button";
+
+  button.dataset.variant = variant;
+
+  button.textContent = label;
+
+  button.disabled = disabled;
+
+  button.setAttribute("aria-pressed", String(active));
+
+  if (active) {
+    button.classList.add("is-active");
+  }
+
+  return button;
+}
+
+/* =========================================================
+   ARTWORK VARIANT STATE
+   ========================================================= */
+
+function setupArtworkVariants(article) {
+  const control = article.querySelector(".pokemon-detail__variant-control");
+
+  if (!control) {
+    return;
+  }
+
+  const buttons = [
+    ...control.querySelectorAll(".pokemon-detail__variant-button"),
+  ];
+
+  const artworkImages = [...article.querySelectorAll("[data-artwork-normal]")];
+
+  function activateVariant(variant) {
+    if (variant !== "normal" && variant !== "shiny") {
+      return;
+    }
+
+    article.dataset.artworkVariant = variant;
+
+    buttons.forEach((button) => {
+      const isActive = button.dataset.variant === variant;
+
+      button.classList.toggle("is-active", isActive);
+
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+
+    artworkImages.forEach((image) => {
+      applyArtworkVariant(image, variant);
+    });
+  }
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.disabled) {
+        return;
+      }
+
+      activateVariant(button.dataset.variant);
+    });
+  });
+
+  activateVariant("normal");
+}
+
+/* =========================================================
+   ARTWORK VARIANT — IMAGE
+   ========================================================= */
+
+function applyArtworkVariant(image, variant) {
+  const normalSource = image.dataset.artworkNormal ?? "";
+
+  const shinySource = image.dataset.artworkShiny ?? "";
+
+  const wantsShiny = variant === "shiny";
+
+  const source = wantsShiny
+    ? shinySource || normalSource
+    : normalSource || shinySource;
+
+  const usingShiny = wantsShiny && Boolean(shinySource);
+
+  if (!source) {
+    image.hidden = true;
+
+    image.removeAttribute("src");
+
+    return;
+  }
+
+  image.src = source;
+
+  image.hidden = false;
+
+  if (image.dataset.artworkRole === "main") {
+    const pokemonName = image.dataset.pokemonName ?? "";
+
+    image.alt = usingShiny ? `${pokemonName} Shiny` : pokemonName;
+
+    const artwork = image.closest(".pokemon-detail__artwork");
+
+    if (artwork) {
+      artwork.dataset.variant = usingShiny ? "shiny" : "normal";
+    }
+  }
+}
+
+/* =========================================================
    ARTWORK
    ========================================================= */
 
@@ -276,9 +438,19 @@ function createArtwork(pokemon) {
 
   artwork.className = "pokemon-detail__artwork";
 
+  artwork.dataset.variant = "normal";
+
   const image = document.createElement("img");
 
   image.className = "pokemon-detail__image";
+
+  image.dataset.artworkRole = "main";
+
+  image.dataset.pokemonName = pokemon.name;
+
+  image.dataset.artworkNormal = pokemon.artwork ?? "";
+
+  image.dataset.artworkShiny = pokemon.shinyArtwork ?? "";
 
   image.src = pokemon.artwork ?? "";
 
@@ -335,20 +507,27 @@ function createSectionNavigation() {
   navigation.append(
     createSectionTab({
       id: "pokemon-detail-tab-about",
+
       panelId: "pokemon-detail-about",
+
       label: "Sobre",
+
       active: true,
     }),
 
     createSectionTab({
       id: "pokemon-detail-tab-weaknesses",
+
       panelId: "pokemon-detail-weaknesses",
+
       label: "Fraquezas",
     }),
 
     createSectionTab({
       id: "pokemon-detail-tab-evolution",
+
       panelId: "pokemon-detail-evolution",
+
       label: "Evolução",
     }),
   );
@@ -356,7 +535,15 @@ function createSectionNavigation() {
   return navigation;
 }
 
-function createSectionTab({ id, panelId, label, active = false }) {
+function createSectionTab({
+  id,
+
+  panelId,
+
+  label,
+
+  active = false,
+}) {
   const button = document.createElement("button");
 
   button.id = id;
@@ -393,7 +580,11 @@ function setupSectionTabs(article) {
 
   const panels = [...article.querySelectorAll('[role="tabpanel"]')];
 
-  function activateTab(selectedTab, { moveFocus = false } = {}) {
+  function activateTab(
+    selectedTab,
+
+    { moveFocus = false } = {},
+  ) {
     const targetId = selectedTab.dataset.panel;
 
     tabs.forEach((tab) => {
@@ -645,7 +836,13 @@ function createEvolutionSection(pokemon) {
    EVOLUTION NODE
    ========================================================= */
 
-function createEvolutionNode(node, currentSpeciesId, depth) {
+function createEvolutionNode(
+  node,
+
+  currentSpeciesId,
+
+  depth,
+) {
   const branch = document.createElement("div");
 
   branch.className = "pokemon-detail__evolution-branch";
@@ -733,7 +930,11 @@ function createEvolutionArrow() {
    EVOLUTION POKÉMON
    ========================================================= */
 
-function createEvolutionPokemon(node, currentSpeciesId) {
+function createEvolutionPokemon(
+  node,
+
+  currentSpeciesId,
+) {
   const link = document.createElement("a");
 
   link.className = "pokemon-detail__evolution-pokemon";
@@ -755,6 +956,10 @@ function createEvolutionPokemon(node, currentSpeciesId) {
   const image = document.createElement("img");
 
   image.className = "pokemon-detail__evolution-image";
+
+  image.dataset.artworkNormal = node.artwork ?? "";
+
+  image.dataset.artworkShiny = node.shinyArtwork ?? "";
 
   image.src = node.artwork ?? "";
 
@@ -837,7 +1042,15 @@ function createEvolutionEmpty(message) {
    TAB PANEL
    ========================================================= */
 
-function createTabPanel({ id, labelledBy, className, active = false }) {
+function createTabPanel({
+  id,
+
+  labelledBy,
+
+  className,
+
+  active = false,
+}) {
   const section = document.createElement("section");
 
   section.id = id;
@@ -907,7 +1120,11 @@ function createFacts(pokemon) {
   return list;
 }
 
-function createFact({ label, value }) {
+function createFact({
+  label,
+
+  value,
+}) {
   const item = document.createElement("div");
 
   item.className = "pokemon-detail__fact";
@@ -976,13 +1193,17 @@ export function createPokemonDetailSkeleton() {
 
   identity.append(types);
 
+  const variantControl = createSkeletonBlock(
+    "pokemon-detail__skeleton-variant-control",
+  );
+
   const artwork = document.createElement("div");
 
   artwork.className = "pokemon-detail__artwork";
 
   artwork.append(createSkeletonBlock("pokemon-detail__skeleton-image"));
 
-  hero.append(topbar, identity, artwork);
+  hero.append(topbar, identity, variantControl, artwork);
 
   const content = document.createElement("div");
 

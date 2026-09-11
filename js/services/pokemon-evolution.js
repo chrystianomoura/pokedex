@@ -82,6 +82,8 @@ function mapEvolutionNode(node, pokemonBySpecies) {
 
     artwork: getPokemonArtwork(pokemon),
 
+    shinyArtwork: getPokemonShinyArtwork(pokemon),
+
     evolution: mapEvolutionRequirement(node.evolution_details),
 
     children: evolutions.map((child) => {
@@ -162,6 +164,14 @@ function getPokemonArtwork(pokemon) {
   return (
     pokemon.sprites?.other?.["official-artwork"]?.front_default ??
     pokemon.sprites?.front_default ??
+    null
+  );
+}
+
+function getPokemonShinyArtwork(pokemon) {
+  return (
+    pokemon.sprites?.other?.["official-artwork"]?.front_shiny ??
+    pokemon.sprites?.front_shiny ??
     null
   );
 }
