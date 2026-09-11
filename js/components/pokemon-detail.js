@@ -4,6 +4,11 @@ import {
   getPokemonTypeName,
 } from "../data/pokemon-types.js";
 
+import {
+  isPokemonFavorite,
+  toggleFavoritePokemon,
+} from "../services/favorites.js";
+
 /* =========================================================
    POKÉDEX — POKÉMON DETAIL COMPONENT
    ========================================================= */
@@ -47,7 +52,7 @@ function createHero(pokemon) {
 
   hero.className = "pokemon-detail__hero";
 
-  const topbar = createTopbar();
+  const topbar = createTopbar(pokemon);
 
   const identity = createIdentity(pokemon);
 
@@ -62,7 +67,7 @@ function createHero(pokemon) {
    TOPBAR
    ========================================================= */
 
-function createTopbar() {
+function createTopbar(pokemon) {
   const topbar = document.createElement("div");
 
   topbar.className = "pokemon-detail__topbar";
@@ -107,26 +112,38 @@ function createTopbar() {
 
   backLink.append(backIcon, backLabel);
 
+  const favoriteButton = createFavoriteButton(pokemon);
+
+  topbar.append(backLink, favoriteButton);
+
+  return topbar;
+}
+
+/* =========================================================
+   FAVORITE
+   ========================================================= */
+
+function createFavoriteButton(pokemon) {
   const favoriteButton = document.createElement("button");
 
   favoriteButton.className = "pokemon-detail__favorite";
 
   favoriteButton.type = "button";
 
-  favoriteButton.setAttribute("aria-label", "Adicionar aos favoritos");
+  const favoriteId = getFavoritePokemonId(pokemon);
 
-  favoriteButton.setAttribute("aria-pressed", "false");
+  favoriteButton.dataset.pokemonId = String(favoriteId);
 
   favoriteButton.innerHTML = `
     <svg
       viewBox="0 0 24 24"
       width="21"
       height="21"
-      fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
       <path
+        class="pokemon-detail__favorite-heart"
         d="M12 20.25C12 20.25 4.5 16.15 4.5 10.25C4.5 7.7 6.25 6 8.5 6C10.1 6 11.25 6.9 12 8C12.75 6.9 13.9 6 15.5 6C17.75 6 19.5 7.7 19.5 10.25C19.5 16.15 12 20.25 12 20.25Z"
         stroke="currentColor"
         stroke-width="1.7"
@@ -136,9 +153,56 @@ function createTopbar() {
     </svg>
   `;
 
-  topbar.append(backLink, favoriteButton);
+  updateFavoriteButton(favoriteButton, isPokemonFavorite(favoriteId));
 
-  return topbar;
+  favoriteButton.addEventListener("click", () => {
+    try {
+      const isFavorite = toggleFavoritePokemon(favoriteId);
+
+      updateFavoriteButton(favoriteButton, isFavorite);
+    } catch (error) {
+      console.error("Não foi possível alterar o favorito.", error);
+    }
+  });
+
+  return favoriteButton;
+}
+
+/* =========================================================
+   FAVORITE — ID
+   ========================================================= */
+
+function getFavoritePokemonId(pokemon) {
+  const speciesId = Number(pokemon.speciesId);
+
+  if (Number.isInteger(speciesId) && speciesId > 0) {
+    return speciesId;
+  }
+
+  return pokemon.id;
+}
+
+/* =========================================================
+   FAVORITE — STATE
+   ========================================================= */
+
+function updateFavoriteButton(favoriteButton, isFavorite) {
+  favoriteButton.classList.toggle("is-favorite", isFavorite);
+
+  favoriteButton.setAttribute("aria-pressed", String(isFavorite));
+
+  favoriteButton.setAttribute(
+    "aria-label",
+    isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos",
+  );
+
+  const heart = favoriteButton.querySelector(".pokemon-detail__favorite-heart");
+
+  if (!heart) {
+    return;
+  }
+
+  heart.setAttribute("fill", isFavorite ? "currentColor" : "none");
 }
 
 /* =========================================================
@@ -545,10 +609,6 @@ function createEvolutionSection(pokemon) {
     return section;
   }
 
-  /* =======================================================
-     SINGLE STAGE
-     ======================================================= */
-
   if (isSingleStageEvolution(evolution)) {
     const message = createEvolutionEmpty("Este Pokémon não evolui.");
 
@@ -556,10 +616,6 @@ function createEvolutionSection(pokemon) {
 
     return section;
   }
-
-  /* =======================================================
-     TREE
-     ======================================================= */
 
   const tree = document.createElement("div");
 
@@ -623,15 +679,6 @@ function createEvolutionNode(node, currentSpeciesId, depth) {
 
     connection.classList.add(isBranched ? "is-branched" : "is-linear");
 
-    /*
-     * Cadeia linear:
-     * usamos seta.
-     *
-     * Ramificação:
-     * não criamos seta;
-     * o CSS desenhará apenas
-     * as linhas da árvore.
-     */
     if (!isBranched) {
       connection.append(createEvolutionArrow());
     }

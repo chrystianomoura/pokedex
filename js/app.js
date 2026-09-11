@@ -1,5 +1,7 @@
 import { createPokemonSearch } from "./components/pokemon-search.js";
 
+import { createFavoritesLink } from "./components/favorites-link.js";
+
 import { createNationalDexFeature } from "./features/national-dex.js";
 
 import { createPokemonSearchFeature } from "./features/search.js";
@@ -8,7 +10,11 @@ import { createPokemonGenerationsFeature } from "./features/generations.js";
 
 import { createPokemonDetailFeature } from "./features/pokemon-detail.js";
 
+import { createFavoritesFeature } from "./features/favorites.js";
+
 import { createRouter } from "./router/router.js";
+
+import { formatPokemonName } from "./utils/pokemon-name.js";
 
 /* =========================================================
    POKÉDEX — APP
@@ -27,11 +33,19 @@ if (!app) {
 const routes = [
   {
     name: "home",
+
     path: "/",
   },
 
   {
+    name: "favorites",
+
+    path: "/favorites",
+  },
+
+  {
     name: "pokemon",
+
     path: "/pokemon/:pokemon",
   },
 ];
@@ -57,6 +71,8 @@ let pokemonSearch = null;
 let pokemonGenerations = null;
 
 let pokemonDetail = null;
+
+let pokemonFavorites = null;
 
 /* =========================================================
    HOME STATE
@@ -89,11 +105,23 @@ function createHomePage() {
 
   header.className = "pokedex-page__header";
 
+  /* =======================================================
+     TITLE ROW
+     ======================================================= */
+
+  const titleRow = document.createElement("div");
+
+  titleRow.className = "pokedex-page__title-row";
+
   const title = document.createElement("h1");
 
   title.className = "pokedex-page__title";
 
   title.textContent = "Pokédex";
+
+  const favoritesLink = createFavoritesLink();
+
+  titleRow.append(title, favoritesLink);
 
   /* =======================================================
      SEARCH
@@ -109,7 +137,7 @@ function createHomePage() {
 
   generationHost.className = "pokedex-page__generations";
 
-  header.append(title, search.element, generationHost);
+  header.append(titleRow, search.element, generationHost);
 
   /* =======================================================
      NATIONAL DEX GRID
@@ -229,6 +257,119 @@ function createHomePage() {
 
     search,
   };
+}
+
+/* =========================================================
+   FAVORITES PAGE
+   ========================================================= */
+
+function createFavoritesPage() {
+  const page = document.createElement("main");
+
+  page.className = "pokedex-page pokedex-page--favorites";
+
+  /* =======================================================
+     HEADER
+     ======================================================= */
+
+  const header = document.createElement("header");
+
+  header.className = "pokedex-page__header pokedex-page__favorites-header";
+
+  /* =======================================================
+     TITLE ROW
+     ======================================================= */
+
+  const titleRow = document.createElement("div");
+
+  titleRow.className = "pokedex-page__favorites-title-row";
+
+  const backLink = createFavoritesBackLink();
+
+  const title = document.createElement("h1");
+
+  title.className = "pokedex-page__title";
+
+  title.textContent = "Favoritos";
+
+  const balance = document.createElement("span");
+
+  balance.className = "pokedex-page__favorites-title-balance";
+
+  balance.setAttribute("aria-hidden", "true");
+
+  titleRow.append(backLink, title, balance);
+
+  header.append(titleRow);
+
+  /* =======================================================
+     EMPTY / ERROR STATE
+     ======================================================= */
+
+  const emptyState = document.createElement("p");
+
+  emptyState.className = "pokedex-page__favorites-empty";
+
+  emptyState.setAttribute("aria-live", "polite");
+
+  emptyState.hidden = true;
+
+  /* =======================================================
+     GRID
+     ======================================================= */
+
+  const grid = document.createElement("section");
+
+  grid.className = "pokemon-grid pokemon-grid--favorites";
+
+  grid.setAttribute("aria-label", "Pokémon favoritos");
+
+  /* =======================================================
+     ASSEMBLY
+     ======================================================= */
+
+  page.append(header, emptyState, grid);
+
+  return {
+    page,
+
+    grid,
+
+    emptyState,
+  };
+}
+
+/* =========================================================
+   FAVORITES — BACK LINK
+   ========================================================= */
+
+function createFavoritesBackLink() {
+  const link = document.createElement("a");
+
+  link.className = "pokedex-page__favorites-back";
+
+  link.href = "/";
+
+  link.setAttribute("aria-label", "Voltar para a Pokédex");
+
+  link.innerHTML = `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M15 18L9 12L15 6"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  `;
+
+  return link;
 }
 
 /* =========================================================
@@ -511,6 +652,10 @@ async function mountHome() {
 
   pokemonDetail = null;
 
+  pokemonFavorites?.destroy();
+
+  pokemonFavorites = null;
+
   await initializeHome();
 
   /*
@@ -549,11 +694,77 @@ async function mountHome() {
 }
 
 /* =========================================================
+   FAVORITES ROUTE
+   ========================================================= */
+
+async function mountFavorites() {
+  saveHomeNavigationState();
+
+  pokemonDetail?.destroy();
+
+  pokemonDetail = null;
+
+  pokemonFavorites?.destroy();
+
+  pokemonFavorites = null;
+
+  /* =======================================================
+     PAGE
+     ======================================================= */
+
+  const favoritesView = createFavoritesPage();
+
+  app.replaceChildren(favoritesView.page);
+
+  window.scrollTo({
+    top: 0,
+
+    left: 0,
+
+    behavior: "instant",
+  });
+
+  document.title = "Favoritos | Pokédex";
+
+  /* =======================================================
+     FEATURE
+     ======================================================= */
+
+  const favoritesFeature = createFavoritesFeature({
+    grid: favoritesView.grid,
+
+    emptyState: favoritesView.emptyState,
+  });
+
+  pokemonFavorites = favoritesFeature;
+
+  await favoritesFeature.init();
+
+  /*
+   * O carregamento dos favoritos é assíncrono.
+   *
+   * Se a rota mudar durante a requisição, a feature anterior
+   * já terá sido destruída e não deve continuar ativa.
+   */
+
+  if (
+    router.currentRoute?.name !== "favorites" ||
+    pokemonFavorites !== favoritesFeature
+  ) {
+    return;
+  }
+}
+
+/* =========================================================
    POKÉMON ROUTE
    ========================================================= */
 
 async function mountPokemonRoute(route) {
   saveHomeNavigationState();
+
+  pokemonFavorites?.destroy();
+
+  pokemonFavorites = null;
 
   pokemonDetail?.destroy();
 
@@ -647,6 +858,10 @@ function mountNotFound() {
 
   pokemonDetail = null;
 
+  pokemonFavorites?.destroy();
+
+  pokemonFavorites = null;
+
   const page = document.createElement("main");
 
   page.className = "pokedex-page";
@@ -689,6 +904,11 @@ function handleRouteChange(route) {
 
       break;
 
+    case "favorites":
+      void mountFavorites();
+
+      break;
+
     case "pokemon":
       void mountPokemonRoute(route);
 
@@ -712,12 +932,7 @@ function formatPokemonRouteName(pokemon) {
     return `#${Number(pokemon)}`;
   }
 
-  return pokemon
-    .split("-")
-    .map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
+  return formatPokemonName(pokemon);
 }
 
 /* =========================================================
