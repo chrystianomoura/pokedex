@@ -48,7 +48,7 @@ function getPokemonRouteIdentifier(pokemon) {
 function createPokemonHref(pokemon) {
   const identifier = getPokemonRouteIdentifier(pokemon);
 
-  return `/pokemon/${encodeURIComponent(identifier)}`;
+  return `#/pokemon/${encodeURIComponent(identifier)}`;
 }
 
 /* =========================================================

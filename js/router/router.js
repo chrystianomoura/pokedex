@@ -12,6 +12,10 @@ export function createRouter({
   let currentRoute = null;
   let started = false;
 
+  /* =======================================================
+     LIFECYCLE
+     ======================================================= */
+
   function start() {
     if (started) {
       return;
@@ -19,8 +23,12 @@ export function createRouter({
 
     started = true;
 
+    window.addEventListener("hashchange", handleHashChange);
     window.addEventListener("popstate", handlePopState);
+
     document.addEventListener("click", handleDocumentClick);
+
+    migrateLegacyPath();
 
     resolveCurrentRoute({
       replace: true,
@@ -34,14 +42,21 @@ export function createRouter({
 
     started = false;
 
+    window.removeEventListener("hashchange", handleHashChange);
     window.removeEventListener("popstate", handlePopState);
+
     document.removeEventListener("click", handleDocumentClick);
   }
+
+  /* =======================================================
+     NAVIGATION
+     ======================================================= */
 
   function navigate(path, options = {}) {
     const { replace = false, state = null } = options;
 
-    const normalizedPath = normalizePath(path);
+    const normalizedPath = normalizeApplicationPath(path);
+
     const browserPath = createBrowserPath(normalizedPath, normalizedBasePath);
 
     if (replace) {
@@ -60,31 +75,34 @@ export function createRouter({
     });
   }
 
-  function resolveCurrentRoute({ replace = false } = {}) {
-    const pathname = getApplicationPath(
-      window.location.pathname,
-      normalizedBasePath,
-    );
+  /* =======================================================
+     RESOLVE
+     ======================================================= */
 
-    const matchedRoute = matchRoute(routes, pathname);
+  function resolveCurrentRoute({ replace = false } = {}) {
+    const applicationPath = getApplicationPathFromHash();
+
+    const matchedRoute = matchRoute(routes, applicationPath);
 
     const nextRoute = matchedRoute ?? {
       name: "not-found",
-      path: pathname,
+
+      path: applicationPath,
+
       params: {},
+
       route: null,
     };
 
     currentRoute = nextRoute;
 
-    if (replace && matchedRoute) {
-      const browserPath = createBrowserPath(pathname, normalizedBasePath);
-
-      window.history.replaceState(
-        window.history.state,
-        "",
-        `${browserPath}${window.location.search}${window.location.hash}`,
+    if (replace) {
+      const browserPath = createBrowserPath(
+        applicationPath,
+        normalizedBasePath,
       );
+
+      window.history.replaceState(window.history.state, "", browserPath);
     }
 
     if (typeof onRouteChange === "function") {
@@ -92,6 +110,14 @@ export function createRouter({
     }
 
     return currentRoute;
+  }
+
+  /* =======================================================
+     EVENTS
+     ======================================================= */
+
+  function handleHashChange() {
+    resolveCurrentRoute();
   }
 
   function handlePopState() {
@@ -126,10 +152,7 @@ export function createRouter({
       return;
     }
 
-    const applicationPath = getApplicationPath(
-      url.pathname,
-      normalizedBasePath,
-    );
+    const applicationPath = getApplicationPathFromUrl(url, normalizedBasePath);
 
     if (applicationPath === null) {
       return;
@@ -137,10 +160,39 @@ export function createRouter({
 
     event.preventDefault();
 
-    const nextPath = `${applicationPath}${url.search}${url.hash}`;
-
-    navigate(nextPath);
+    navigate(applicationPath);
   }
+
+  /* =======================================================
+     LEGACY PATH MIGRATION
+     ======================================================= */
+
+  function migrateLegacyPath() {
+    if (window.location.hash) {
+      return;
+    }
+
+    const legacyPath = getApplicationPathFromPathname(
+      window.location.pathname,
+      normalizedBasePath,
+    );
+
+    if (legacyPath === null || legacyPath === "/") {
+      return;
+    }
+
+    const suffix = window.location.search;
+
+    const applicationPath = `${legacyPath}${suffix}`;
+
+    const browserPath = createBrowserPath(applicationPath, normalizedBasePath);
+
+    window.history.replaceState(window.history.state, "", browserPath);
+  }
+
+  /* =======================================================
+     PUBLIC API
+     ======================================================= */
 
   return {
     start,
@@ -159,7 +211,9 @@ export function createRouter({
    ROUTE MATCHING
    ========================================================= */
 
-function matchRoute(routes, pathname) {
+function matchRoute(routes, applicationPath) {
+  const pathname = getPathname(applicationPath);
+
   for (const route of routes) {
     const result = matchPath(route.path, pathname);
 
@@ -170,7 +224,7 @@ function matchRoute(routes, pathname) {
     return {
       name: route.name ?? route.path,
 
-      path: pathname,
+      path: applicationPath,
 
       params: result.params,
 
@@ -182,9 +236,9 @@ function matchRoute(routes, pathname) {
 }
 
 function matchPath(routePath, pathname) {
-  const normalizedRoutePath = normalizePath(routePath);
+  const normalizedRoutePath = normalizePathname(routePath);
 
-  const normalizedPathname = normalizePath(pathname);
+  const normalizedPathname = normalizePathname(pathname);
 
   const routeSegments = getPathSegments(normalizedRoutePath);
 
@@ -208,7 +262,11 @@ function matchPath(routePath, pathname) {
         return null;
       }
 
-      params[paramName] = decodeURIComponent(pathnameSegment);
+      try {
+        params[paramName] = decodeURIComponent(pathnameSegment);
+      } catch {
+        params[paramName] = pathnameSegment;
+      }
 
       continue;
     }
@@ -224,39 +282,134 @@ function matchPath(routePath, pathname) {
 }
 
 /* =========================================================
-   PATH
+   APPLICATION PATH
    ========================================================= */
 
-function normalizePath(path) {
+function normalizeApplicationPath(path) {
   if (path === null || path === undefined || path === "") {
     return "/";
   }
 
-  const rawPath = String(path).trim();
+  let rawPath = String(path).trim();
 
-  const url = new URL(rawPath, window.location.origin);
-
-  let pathname = url.pathname;
-
-  if (!pathname.startsWith("/")) {
-    pathname = `/${pathname}`;
+  if (!rawPath) {
+    return "/";
   }
 
-  if (pathname.length > 1 && pathname.endsWith("/")) {
-    pathname = pathname.slice(0, -1);
+  if (rawPath.startsWith("#")) {
+    rawPath = rawPath.slice(1);
   }
 
-  return `${pathname}${url.search}${url.hash}`;
+  if (!rawPath.startsWith("/")) {
+    rawPath = `/${rawPath}`;
+  }
+
+  const hashIndex = rawPath.indexOf("#");
+
+  if (hashIndex !== -1) {
+    rawPath = rawPath.slice(0, hashIndex);
+  }
+
+  const queryIndex = rawPath.indexOf("?");
+
+  const rawPathname =
+    queryIndex === -1 ? rawPath : rawPath.slice(0, queryIndex);
+
+  const search = queryIndex === -1 ? "" : rawPath.slice(queryIndex);
+
+  const pathname = normalizePathname(rawPathname);
+
+  return `${pathname}${search}`;
 }
 
-function getPathSegments(path) {
-  const pathname = path.split(/[?#]/)[0];
+function normalizePathname(pathname) {
+  if (pathname === null || pathname === undefined || pathname === "") {
+    return "/";
+  }
 
-  if (pathname === "/") {
+  let normalized = String(pathname).trim();
+
+  normalized = normalized.split(/[?#]/)[0];
+
+  if (!normalized.startsWith("/")) {
+    normalized = `/${normalized}`;
+  }
+
+  normalized = normalized.replace(/\/{2,}/g, "/");
+
+  if (normalized.length > 1 && normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+
+  return normalized || "/";
+}
+
+function getPathname(applicationPath) {
+  return normalizePathname(applicationPath);
+}
+
+function getPathSegments(pathname) {
+  const normalizedPathname = normalizePathname(pathname);
+
+  if (normalizedPathname === "/") {
     return [];
   }
 
-  return pathname.split("/").filter(Boolean);
+  return normalizedPathname.split("/").filter(Boolean);
+}
+
+/* =========================================================
+   HASH
+   ========================================================= */
+
+function getApplicationPathFromHash() {
+  const hash = window.location.hash;
+
+  if (!hash || hash === "#") {
+    return "/";
+  }
+
+  const rawPath = hash.slice(1);
+
+  return normalizeApplicationPath(rawPath);
+}
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+function getApplicationPathFromUrl(url, basePath) {
+  /*
+   * Link já usando hash routing.
+   *
+   * Exemplo:
+   *
+   * /pokedex/#/pokemon/pikachu
+   */
+
+  if (url.hash.startsWith("#/")) {
+    return normalizeApplicationPath(url.hash.slice(1));
+  }
+
+  /*
+   * Compatibilidade temporária com links antigos.
+   *
+   * Exemplo:
+   *
+   * /pokemon/pikachu
+   *
+   * ou:
+   *
+   * /pokedex/pokemon/pikachu
+   */
+
+  const pathname = getApplicationPathFromPathname(url.pathname, basePath);
+
+  if (pathname === null) {
+    return null;
+  }
+
+  return normalizeApplicationPath(`${pathname}${url.search}`);
 }
 
 /* =========================================================
@@ -274,6 +427,8 @@ function normalizeBasePath(basePath) {
     normalized = `/${normalized}`;
   }
 
+  normalized = normalized.replace(/\/{2,}/g, "/");
+
   if (normalized.length > 1 && normalized.endsWith("/")) {
     normalized = normalized.slice(0, -1);
   }
@@ -285,40 +440,34 @@ function normalizeBasePath(basePath) {
   return normalized;
 }
 
-function getApplicationPath(pathname, basePath) {
+function getApplicationPathFromPathname(pathname, basePath) {
+  const normalizedPathname = normalizePathname(pathname);
+
   if (!basePath) {
-    return normalizePath(pathname);
+    return normalizedPathname;
   }
 
-  if (pathname === basePath) {
+  if (normalizedPathname === basePath) {
     return "/";
   }
 
-  if (!pathname.startsWith(`${basePath}/`)) {
+  if (!normalizedPathname.startsWith(`${basePath}/`)) {
     return null;
   }
 
-  const applicationPath = pathname.slice(basePath.length);
+  const applicationPath = normalizedPathname.slice(basePath.length);
 
-  return normalizePath(applicationPath);
+  return normalizePathname(applicationPath);
 }
 
+/* =========================================================
+   BROWSER PATH
+   ========================================================= */
+
 function createBrowserPath(applicationPath, basePath) {
-  const normalizedPath = normalizePath(applicationPath);
+  const normalizedPath = normalizeApplicationPath(applicationPath);
 
-  const match = normalizedPath.match(/^([^?#]*)(.*)$/);
+  const rootPath = basePath ? `${basePath}/` : "/";
 
-  const pathname = match?.[1] ?? "/";
-
-  const suffix = match?.[2] ?? "";
-
-  if (!basePath) {
-    return `${pathname}${suffix}`;
-  }
-
-  if (pathname === "/") {
-    return `${basePath}/${suffix}`;
-  }
-
-  return `${basePath}${pathname}${suffix}`;
+  return `${rootPath}#${normalizedPath}`;
 }
