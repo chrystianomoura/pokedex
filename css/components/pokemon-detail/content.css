@@ -14,9 +14,11 @@
 
   width: calc(100% - 4px);
 
+  --content-top-space: clamp(44px, 8svh, 60px);
+
   margin: -28px auto 0;
 
-  padding: 82px 18px 30px;
+  padding: var(--content-top-space) 18px 30px;
 
   overflow: hidden;
 
@@ -181,7 +183,7 @@
    ========================================================= */
 
 .pokemon-detail__about {
-  padding: 2px 0 0;
+  padding: 0;
 }
 
 /* =========================================================
@@ -215,7 +217,8 @@
 
     margin-top: -24px;
 
-    padding: 72px 14px 24px;
+    padding-inline: 14px;
+    padding-bottom: 24px;
 
     border-radius: 26px 26px 22px 22px;
   }
@@ -307,7 +310,7 @@
   .pokemon-detail__section-navigation {
     max-width: 520px;
 
-    margin: 0 auto 16px;
+    margin: 0 auto 18px;
   }
 
   .pokemon-detail__section-link {
@@ -323,9 +326,9 @@
   .pokemon-detail__description {
     max-width: 540px;
 
-    font-size: 0.82rem;
+    font-size: 0.92rem;
 
-    line-height: 1.55;
+    line-height: 1.58;
   }
 }
 
@@ -351,7 +354,7 @@
   }
 
   .pokemon-detail__section-navigation {
-    margin-bottom: 13px;
+    margin-bottom: 16px;
   }
 
   .pokemon-detail__section-link {
@@ -363,9 +366,9 @@
   .pokemon-detail__description {
     max-width: 520px;
 
-    font-size: 0.78rem;
+    font-size: 0.88rem;
 
-    line-height: 1.48;
+    line-height: 1.52;
   }
 }
 

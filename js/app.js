@@ -1026,7 +1026,19 @@ async function initializeHomeFeatures() {
    ========================================================= */
 
 function saveHomeNavigationState() {
-  if (!homeView) {
+  /*
+   * O estado da Home só pode ser atualizado enquanto ela
+   * estiver realmente montada no app.
+   *
+   * Ao navegar entre páginas de detalhe — por exemplo,
+   * Ivysaur -> Venusaur pela árvore de evolução — homeView
+   * continua existindo em memória, mas não está mais no DOM.
+   *
+   * Sem esta verificação, o scroll da página de detalhe
+   * sobrescrevia o scroll salvo da Pokédex.
+   */
+
+  if (!homeView || !app.contains(homeView.page)) {
     return;
   }
 

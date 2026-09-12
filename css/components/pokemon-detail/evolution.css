@@ -20,7 +20,7 @@
 
   margin: 0 auto;
 
-  padding: 8px 0 4px;
+  padding: 0 0 4px;
 }
 
 /* =========================================================
@@ -393,7 +393,7 @@
 .pokemon-detail__evolution-empty {
   max-width: 340px;
 
-  margin: 18px auto 4px;
+  margin: 0 auto 4px;
 
   color: var(--color-text, #17191c);
 
@@ -412,10 +412,6 @@
    ========================================================= */
 
 @media (max-width: 359px) {
-  .pokemon-detail__evolution-tree {
-    padding-top: 4px;
-  }
-
   .pokemon-detail__evolution-pokemon {
     width: 148px;
   }
@@ -493,8 +489,6 @@
   }
 
   .pokemon-detail__evolution-empty {
-    margin-top: 14px;
-
     font-size: 0.88rem;
   }
 }
@@ -504,10 +498,6 @@
    ========================================================= */
 
 @media (min-width: 600px) {
-  .pokemon-detail__evolution-tree {
-    padding-top: 12px;
-  }
-
   /* =======================================================
      LINEAR
      ======================================================= */
@@ -593,8 +583,6 @@
   }
 
   .pokemon-detail__evolution-empty {
-    margin-top: 20px;
-
     font-size: 1rem;
   }
 }
@@ -604,10 +592,6 @@
    ========================================================= */
 
 @media (min-width: 900px) {
-  .pokemon-detail__evolution-tree {
-    padding-top: 14px;
-  }
-
   /* =======================================================
      LINEAR
      ======================================================= */

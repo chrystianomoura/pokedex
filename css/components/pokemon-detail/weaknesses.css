@@ -29,7 +29,7 @@
 
   margin: 0;
 
-  padding: 10px 0 4px;
+  padding: 0 0 4px;
 
   list-style: none;
 }
@@ -102,8 +102,6 @@
 
   width: 100%;
 
-  margin-top: 9px;
-
   overflow: hidden;
 
   color: var(--color-text, #17191c);
@@ -146,8 +144,6 @@
 @media (max-width: 359px) {
   .pokemon-detail__weakness-list {
     gap: 20px 14px;
-
-    padding-top: 8px;
   }
 
   .pokemon-detail__weakness {
@@ -177,8 +173,6 @@
     margin: 0 auto;
 
     gap: 26px 30px;
-
-    padding-top: 14px;
   }
 
   .pokemon-detail__weakness {
@@ -202,22 +196,10 @@
    ========================================================= */
 
 @media (min-width: 900px) {
-  /*
-   * A aba não possui mais um título interno.
-   * Quando Fraquezas estiver ativa, a navegação pode ficar
-   * mais próxima do conteúdo real da aba.
-   */
-  .pokemon-detail__content:has(.pokemon-detail__weaknesses:not([hidden]))
-    .pokemon-detail__section-navigation {
-    margin-bottom: 6px;
-  }
-
   .pokemon-detail__weakness-list {
     max-width: 640px;
 
     gap: 30px 34px;
-
-    padding-top: 4px;
   }
 
   .pokemon-detail__weakness {

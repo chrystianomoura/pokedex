@@ -1,17 +1,80 @@
 const API_BASE_URL = "https://pokeapi.co/api/v2";
 
 /* =========================================================
+   API ERRORS
+   ========================================================= */
+
+export class PokeApiHttpError extends Error {
+  constructor(message, { status, statusText, endpoint } = {}) {
+    super(message);
+
+    this.name = "PokeApiHttpError";
+
+    this.status = status ?? null;
+    this.statusText = statusText ?? "";
+    this.endpoint = endpoint ?? "";
+  }
+}
+
+export class PokeApiNetworkError extends Error {
+  constructor(message, { endpoint, cause } = {}) {
+    super(message, {
+      cause,
+    });
+
+    this.name = "PokeApiNetworkError";
+
+    this.endpoint = endpoint ?? "";
+  }
+}
+
+/* =========================================================
+   ERROR HELPERS
+   ========================================================= */
+
+export function isPokeApiNotFoundError(error) {
+  return error instanceof PokeApiHttpError && error.status === 404;
+}
+
+export function isPokeApiNetworkError(error) {
+  return error instanceof PokeApiNetworkError;
+}
+
+/* =========================================================
    REQUEST
    ========================================================= */
 
 async function request(endpoint, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    signal: options.signal,
-  });
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      signal: options.signal,
+    });
+  } catch (error) {
+    /*
+     * AbortController faz parte do fluxo normal da aplicação.
+     * Não transformamos AbortError em erro de rede.
+     */
+
+    if (error?.name === "AbortError") {
+      throw error;
+    }
+
+    throw new PokeApiNetworkError("Não foi possível conectar à PokéAPI.", {
+      endpoint,
+      cause: error,
+    });
+  }
 
   if (!response.ok) {
-    throw new Error(
+    throw new PokeApiHttpError(
       `Erro na PokéAPI: ${response.status} ${response.statusText}`,
+      {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint,
+      },
     );
   }
 
@@ -82,7 +145,6 @@ export async function getPokemonSpeciesList(
 
   const searchParams = new URLSearchParams({
     limit: String(limit),
-
     offset: String(offset),
   });
 
@@ -111,7 +173,6 @@ export async function getAllPokemonSpecies(options = {}) {
   const completeList = await getPokemonSpeciesList(
     {
       limit: totalSpecies,
-
       offset: 0,
     },
     options,

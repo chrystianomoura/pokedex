@@ -3,6 +3,8 @@ import {
   getPokemon,
   getPokemonSpecies,
   getType,
+  isPokeApiNetworkError,
+  isPokeApiNotFoundError,
 } from "../api/pokeapi.js";
 
 import { getPokemonDescriptionPtBr } from "../api/pokemon-descriptions.js";
@@ -188,7 +190,7 @@ export function createPokemonDetailFeature({
         return null;
       }
 
-      renderError(identifier);
+      renderLoadError(identifier, error);
 
       console.error("Erro ao carregar detalhe do Pokémon:", error);
 
@@ -227,10 +229,54 @@ export function createPokemonDetailFeature({
   }
 
   /* =======================================================
-     RENDER — ERROR
+     RENDER — LOAD ERROR
      ======================================================= */
 
-  function renderError(identifier) {
+  function renderLoadError(identifier, error) {
+    if (isPokeApiNotFoundError(error)) {
+      renderErrorState({
+        title: "Pokémon não encontrado",
+
+        description: `Não foi possível encontrar "${formatIdentifier(
+          identifier,
+        )}".`,
+      });
+
+      return;
+    }
+
+    if (isPokeApiNetworkError(error)) {
+      renderErrorState({
+        title: "Não foi possível conectar",
+
+        description:
+          "A PokéAPI está temporariamente indisponível ou sua conexão foi interrompida. Tente novamente.",
+
+        retryIdentifier: identifier,
+      });
+
+      return;
+    }
+
+    renderErrorState({
+      title: "Não foi possível carregar",
+
+      description:
+        "Ocorreu um erro inesperado ao carregar este Pokémon. Tente novamente.",
+
+      retryIdentifier: identifier,
+    });
+  }
+
+  /* =======================================================
+     RENDER — ERROR STATE
+     ======================================================= */
+
+  function renderErrorState({
+    title,
+    description,
+    retryIdentifier = null,
+  } = {}) {
     const error = document.createElement("section");
 
     error.className = "pokemon-detail-error";
@@ -241,29 +287,52 @@ export function createPokemonDetailFeature({
        TITLE
        ===================================================== */
 
-    const title = document.createElement("h1");
+    const errorTitle = document.createElement("h1");
 
-    title.className = "pokemon-detail-error__title";
+    errorTitle.className = "pokemon-detail-error__title";
 
-    title.textContent = "Pokémon não encontrado";
+    errorTitle.textContent = title;
 
     /* =====================================================
        DESCRIPTION
        ===================================================== */
 
-    const description = document.createElement("p");
+    const errorDescription = document.createElement("p");
 
-    description.className = "pokemon-detail-error__description";
+    errorDescription.className = "pokemon-detail-error__description";
 
-    description.textContent = `Não foi possível carregar "${formatIdentifier(identifier)}".`;
+    errorDescription.textContent = description;
 
     /* =====================================================
-       BACK
+       ACTIONS
        ===================================================== */
+
+    const actions = document.createElement("div");
+
+    actions.className = "pokemon-detail-error__actions";
+
+    if (retryIdentifier) {
+      const retryButton = document.createElement("button");
+
+      retryButton.className =
+        "pokemon-detail-error__action pokemon-detail-error__action--primary";
+
+      retryButton.type = "button";
+
+      retryButton.textContent = "Tentar novamente";
+
+      retryButton.addEventListener("click", () => {
+        load(retryIdentifier);
+      });
+
+      actions.append(retryButton);
+    }
 
     const backLink = document.createElement("a");
 
-    backLink.className = "pokemon-detail-error__back";
+    backLink.className = retryIdentifier
+      ? "pokemon-detail-error__action pokemon-detail-error__action--secondary"
+      : "pokemon-detail-error__action pokemon-detail-error__action--primary";
 
     backLink.href = detailBackTarget.href;
 
@@ -271,11 +340,13 @@ export function createPokemonDetailFeature({
 
     backLink.textContent = `Voltar para ${detailBackTarget.label}`;
 
+    actions.append(backLink);
+
     /* =====================================================
        ASSEMBLY
        ===================================================== */
 
-    error.append(title, description, backLink);
+    error.append(errorTitle, errorDescription, actions);
 
     host.replaceChildren(error);
 

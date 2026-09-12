@@ -174,6 +174,14 @@ p {
   text-align: center;
 }
 
+/*
+ * O título principal da Home pode ser maior sem afetar
+ * Favoritos ou estados auxiliares que reutilizam a mesma classe.
+ */
+.pokedex-page__header > .pokedex-page__title {
+  font-size: clamp(2.45rem, 9.5vw, 4rem);
+}
+
 /* =========================================================
    SEARCH ROW
    ========================================================= */
@@ -303,48 +311,6 @@ p {
   margin: auto;
 
   text-align: center;
-}
-
-.orientation-warning__icon {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 64px;
-  height: 64px;
-
-  margin-bottom: 22px;
-
-  border: 1px solid rgba(23, 25, 28, 0.08);
-
-  border-radius: 20px;
-
-  background: rgba(255, 255, 255, 0.92);
-
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 14px 34px rgba(15, 23, 42, 0.08);
-}
-
-.orientation-warning__icon svg {
-  width: 30px;
-  height: 30px;
-}
-
-.orientation-warning__eyebrow {
-  margin-bottom: 8px;
-
-  color: var(--color-text-secondary);
-
-  font-size: 0.68rem;
-  font-weight: 800;
-
-  line-height: 1;
-
-  letter-spacing: 0.14em;
-
-  text-transform: uppercase;
 }
 
 .orientation-warning__title {
