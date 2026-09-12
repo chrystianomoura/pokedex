@@ -576,17 +576,6 @@
    ========================================================= */
 
 @media (min-width: 900px) {
-  /*
-   * O detalhe inteiro precisa caber na viewport quando
-   * a aba ativa for compacta, como Sobre ou Fraquezas.
-   *
-   * Aproximadamente 350px ficam reservados para:
-   * - padding vertical da página
-   * - sobreposição entre hero e card
-   * - navegação das abas
-   * - conteúdo da aba Sobre
-   * - fatos
-   */
   .pokemon-detail {
     width: min(100%, 640px);
 
@@ -801,12 +790,6 @@
    ========================================================= */
 
 @media (min-width: 900px) and (max-height: 760px) {
-  /*
-   * O content.css e o facts.css também ficam mais compactos
-   * neste intervalo.
-   *
-   * Por isso a reserva cai para aproximadamente 320px.
-   */
   .pokemon-detail {
     width: min(100%, 600px);
   }

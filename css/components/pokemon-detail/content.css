@@ -170,39 +170,11 @@
   scroll-margin-top: 20px;
 }
 
-.pokemon-detail__section + .pokemon-detail__section {
-  margin-top: 38px;
-}
-
-/* =========================================================
-   SECTION HEADER
-   ========================================================= */
-
-.pokemon-detail__section-header {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-
-  margin-bottom: 18px;
-
-  text-align: center;
-}
-
-.pokemon-detail__section-title {
-  margin: 0;
-
-  color: var(--color-text);
-
-  font-size: 1.2rem;
-  font-weight: 800;
-
-  line-height: 1.1;
-
-  letter-spacing: -0.035em;
-}
+/*
+ * As seções são painéis de uma navegação por abas e apenas
+ * uma delas fica visível por vez. O espaçamento vertical deve
+ * vir da navegação, não da posição do painel no DOM.
+ */
 
 /* =========================================================
    ABOUT
@@ -264,10 +236,6 @@
     font-size: 0.78rem;
   }
 
-  .pokemon-detail__section-title {
-    font-size: 1.1rem;
-  }
-
   .pokemon-detail__description {
     font-size: 0.9rem;
 
@@ -304,10 +272,6 @@
     min-height: 60px;
 
     font-size: 0.94rem;
-  }
-
-  .pokemon-detail__section-title {
-    font-size: 1.3rem;
   }
 
   .pokemon-detail__description {
@@ -356,14 +320,6 @@
     height: 2px;
   }
 
-  .pokemon-detail__section-header {
-    margin-bottom: 10px;
-  }
-
-  .pokemon-detail__section-title {
-    font-size: 1.02rem;
-  }
-
   .pokemon-detail__description {
     max-width: 540px;
 
@@ -402,14 +358,6 @@
     min-height: 40px;
 
     font-size: 0.74rem;
-  }
-
-  .pokemon-detail__section-header {
-    margin-bottom: 8px;
-  }
-
-  .pokemon-detail__section-title {
-    font-size: 0.96rem;
   }
 
   .pokemon-detail__description {

@@ -180,25 +180,25 @@
   .pokemon-detail__facts {
     max-width: 340px;
 
-    margin-top: 12px;
+    margin-top: 10px;
   }
 
   .pokemon-detail__fact {
-    padding: 5px 10px;
+    padding: 4px 10px;
   }
 
   .pokemon-detail__fact:first-child::after {
-    top: 4px;
-    bottom: 4px;
+    top: 3px;
+    bottom: 3px;
   }
 
   .pokemon-detail__fact-value {
-    font-size: 1.02rem;
+    font-size: 1rem;
   }
 
   .pokemon-detail__fact-label {
-    margin-top: 4px;
+    margin-top: 3px;
 
-    font-size: 0.58rem;
+    font-size: 0.56rem;
   }
 }
