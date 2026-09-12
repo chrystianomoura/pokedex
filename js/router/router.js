@@ -5,9 +5,9 @@
 export function createRouter({
   routes = [],
   onRouteChange,
-  basePath = "",
+  basePath = null,
 } = {}) {
-  const normalizedBasePath = normalizeBasePath(basePath);
+  const normalizedBasePath = resolveBasePath(basePath);
 
   let currentRoute = null;
   let started = false;
@@ -415,6 +415,46 @@ function getApplicationPathFromUrl(url, basePath) {
 /* =========================================================
    BASE PATH
    ========================================================= */
+
+function resolveBasePath(basePath) {
+  if (basePath !== null && basePath !== undefined) {
+    return normalizeBasePath(basePath);
+  }
+
+  return getDocumentBasePath();
+}
+
+function getDocumentBasePath() {
+  const pathname = window.location.pathname;
+
+  if (!pathname || pathname === "/") {
+    return "";
+  }
+
+  /*
+   * Se o documento foi acessado explicitamente como
+   * index.html, removemos o nome do arquivo.
+   *
+   * /pokedex/index.html -> /pokedex
+   */
+
+  if (pathname.toLowerCase().endsWith("/index.html")) {
+    return normalizeBasePath(pathname.slice(0, -"/index.html".length));
+  }
+
+  /*
+   * No hash routing, o pathname representa a raiz física
+   * da aplicação.
+   *
+   * Local:
+   * /
+   *
+   * GitHub Pages:
+   * /pokedex/
+   */
+
+  return normalizeBasePath(pathname);
+}
 
 function normalizeBasePath(basePath) {
   if (!basePath) {
