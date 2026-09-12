@@ -32,7 +32,7 @@ import {
    ========================================================= */
 
 const DEFAULT_BACK_TARGET = Object.freeze({
-  href: "/",
+  href: "#/",
 
   label: "Pokédex",
 

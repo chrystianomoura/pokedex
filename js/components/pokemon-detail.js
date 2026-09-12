@@ -18,7 +18,7 @@ import {
    ========================================================= */
 
 const DEFAULT_BACK_TARGET = Object.freeze({
-  href: "/",
+  href: "#/",
 
   label: "Pokédex",
 
@@ -945,7 +945,7 @@ function createEvolutionPokemon(
 
   link.className = "pokemon-detail__evolution-pokemon";
 
-  link.href = `/pokemon/${node.slug}`;
+  link.href = `#/pokemon/${encodeURIComponent(node.slug)}`;
 
   link.setAttribute("aria-label", `${node.name} ${node.number}`);
 

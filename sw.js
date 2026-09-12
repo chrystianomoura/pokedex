@@ -2,7 +2,7 @@
    POKÉDEX — SERVICE WORKER
    ========================================================= */
 
-const CACHE_NAME = "pokedex-v1";
+const CACHE_NAME = "pokedex-v2";
 
 const APP_ROOT = new URL("./", self.registration.scope);
 
@@ -32,10 +32,14 @@ self.addEventListener("activate", (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => cacheName !== CACHE_NAME)
-            .map((cacheName) => caches.delete(cacheName)),
+            .map((cacheName) => {
+              return caches.delete(cacheName);
+            }),
         );
       })
-      .then(() => self.clients.claim()),
+      .then(() => {
+        return self.clients.claim();
+      }),
   );
 });
 
@@ -65,7 +69,7 @@ self.addEventListener("fetch", (event) => {
    * Navegação.
    *
    * Como usamos hash routing, todas as páginas da aplicação
-   * continuam apontando para a raiz da Pokédex.
+   * continuam apontando para a raiz física da Pokédex.
    */
 
   if (request.mode === "navigate") {
@@ -75,7 +79,11 @@ self.addEventListener("fetch", (event) => {
   }
 
   /*
-   * Assets da própria aplicação.
+   * Assets internos usam network-first.
+   *
+   * Isso evita manter JavaScript, CSS ou imagens antigos
+   * depois de um novo deploy. O cache é usado somente
+   * quando a rede não estiver disponível.
    */
 
   event.respondWith(handleAssetRequest(request));
@@ -89,7 +97,7 @@ async function handleNavigationRequest(request) {
   try {
     const response = await fetch(request);
 
-    if (response.ok) {
+    if (canCacheResponse(response)) {
       const cache = await caches.open(CACHE_NAME);
 
       await cache.put(APP_ROOT.href, response.clone());
@@ -112,46 +120,6 @@ async function handleNavigationRequest(request) {
    ========================================================= */
 
 async function handleAssetRequest(request) {
-  const cachedResponse = await caches.match(request);
-
-  if (cachedResponse) {
-    /*
-     * Atualiza o cache em segundo plano sem bloquear
-     * a resposta atual.
-     */
-
-    updateAssetCache(request);
-
-    return cachedResponse;
-  }
-
-  return fetchAndCacheAsset(request);
-}
-
-/* =========================================================
-   CACHE UPDATE
-   ========================================================= */
-
-async function updateAssetCache(request) {
-  try {
-    const response = await fetch(request);
-
-    if (!canCacheResponse(response)) {
-      return;
-    }
-
-    const cache = await caches.open(CACHE_NAME);
-
-    await cache.put(request, response.clone());
-  } catch {
-    /*
-     * O recurso já existe no cache.
-     * Falha de atualização não interrompe a aplicação.
-     */
-  }
-}
-
-async function fetchAndCacheAsset(request) {
   try {
     const response = await fetch(request);
 
