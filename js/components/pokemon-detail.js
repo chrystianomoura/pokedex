@@ -9,6 +9,8 @@ import {
   toggleFavoritePokemon,
 } from "../services/favorites.js";
 
+import { loadPokemonImage } from "../utils/pokemon-image.js";
+
 /* =========================================================
    POKÉDEX — POKÉMON DETAIL COMPONENT
    ========================================================= */
@@ -24,6 +26,64 @@ const DEFAULT_BACK_TARGET = Object.freeze({
 
   ariaLabel: "Voltar para a Pokédex",
 });
+
+/* =========================================================
+   ARTWORK IMAGE LOADERS
+   ========================================================= */
+
+const artworkImageLoaders = new WeakMap();
+
+function setupArtworkImage({
+  image,
+
+  id,
+
+  source,
+
+  shiny = false,
+
+  onLoad,
+
+  onUnavailable,
+}) {
+  const previousDispose = artworkImageLoaders.get(image);
+
+  if (previousDispose) {
+    previousDispose();
+
+    artworkImageLoaders.delete(image);
+  }
+
+  const normalizedSource = typeof source === "string" ? source.trim() : "";
+
+  if (!normalizedSource) {
+    image.removeAttribute("src");
+
+    image.hidden = true;
+
+    if (typeof onUnavailable === "function") {
+      onUnavailable(image);
+    }
+
+    return;
+  }
+
+  const dispose = loadPokemonImage({
+    image,
+
+    id,
+
+    source: normalizedSource,
+
+    shiny,
+
+    onLoad,
+
+    onUnavailable,
+  });
+
+  artworkImageLoaders.set(image, dispose);
+}
 
 /* =========================================================
    DETAIL
@@ -422,17 +482,7 @@ function applyArtworkVariant(image, variant) {
 
   const usingShiny = wantsShiny && Boolean(shinySource);
 
-  if (!source) {
-    image.hidden = true;
-
-    image.removeAttribute("src");
-
-    return;
-  }
-
-  image.src = source;
-
-  image.hidden = false;
+  const pokemonId = Number(image.dataset.pokemonId);
 
   if (image.dataset.artworkRole === "main") {
     const pokemonName = image.dataset.pokemonName ?? "";
@@ -445,6 +495,24 @@ function applyArtworkVariant(image, variant) {
       artwork.dataset.variant = usingShiny ? "shiny" : "normal";
     }
   }
+
+  setupArtworkImage({
+    image,
+
+    id: pokemonId,
+
+    source,
+
+    shiny: usingShiny,
+
+    onLoad: () => {
+      image.hidden = false;
+    },
+
+    onUnavailable: () => {
+      image.hidden = true;
+    },
+  });
 }
 
 /* =========================================================
@@ -466,11 +534,11 @@ function createArtwork(pokemon) {
 
   image.dataset.pokemonName = pokemon.name;
 
+  image.dataset.pokemonId = String(pokemon.id);
+
   image.dataset.artworkNormal = pokemon.artwork ?? "";
 
   image.dataset.artworkShiny = pokemon.shinyArtwork ?? "";
-
-  image.src = pokemon.artwork ?? "";
 
   image.alt = pokemon.name;
 
@@ -478,9 +546,7 @@ function createArtwork(pokemon) {
 
   image.draggable = false;
 
-  if (!pokemon.artwork) {
-    image.hidden = true;
-  }
+  image.hidden = true;
 
   artwork.append(image);
 
@@ -963,11 +1029,11 @@ function createEvolutionPokemon(
 
   image.className = "pokemon-detail__evolution-image";
 
+  image.dataset.pokemonId = String(node.id);
+
   image.dataset.artworkNormal = node.artwork ?? "";
 
   image.dataset.artworkShiny = node.shinyArtwork ?? "";
-
-  image.src = node.artwork ?? "";
 
   image.alt = "";
 
@@ -977,9 +1043,7 @@ function createEvolutionPokemon(
 
   image.draggable = false;
 
-  if (!node.artwork) {
-    image.hidden = true;
-  }
+  image.hidden = true;
 
   artwork.append(image);
 

@@ -1,8 +1,44 @@
 import { getPokemonType, getPokemonTypeName } from "../data/pokemon-types.js";
 
+import { loadPokemonImage } from "../utils/pokemon-image.js";
+
 /* =========================================================
    POKÉDEX — POKÉMON CARD
    ========================================================= */
+
+/* =========================================================
+   IMAGE STATE
+   ========================================================= */
+
+function setupPokemonCardImage({ image, placeholder, artwork, pokemon }) {
+  function showImage() {
+    image.hidden = false;
+
+    placeholder.hidden = true;
+
+    artwork.classList.remove("pokemon-card__artwork--unavailable");
+  }
+
+  function showUnavailableState() {
+    image.hidden = true;
+
+    placeholder.hidden = false;
+
+    artwork.classList.add("pokemon-card__artwork--unavailable");
+  }
+
+  loadPokemonImage({
+    image,
+
+    id: pokemon.id,
+
+    source: pokemon.artwork,
+
+    onLoad: showImage,
+
+    onUnavailable: showUnavailableState,
+  });
+}
 
 /* =========================================================
    TYPE BADGE
@@ -88,8 +124,6 @@ export function createPokemonCard(pokemon) {
 
   image.className = "pokemon-card__image";
 
-  image.src = pokemon.artwork;
-
   image.alt = pokemon.name;
 
   image.loading = "lazy";
@@ -98,7 +132,37 @@ export function createPokemonCard(pokemon) {
 
   image.draggable = false;
 
-  artwork.append(image);
+  const imagePlaceholder = document.createElement("div");
+
+  imagePlaceholder.className = "pokemon-card__image-placeholder";
+
+  imagePlaceholder.hidden = true;
+
+  imagePlaceholder.setAttribute("role", "img");
+
+  imagePlaceholder.setAttribute(
+    "aria-label",
+    `Imagem de ${pokemon.name} indisponível`,
+  );
+
+  const imagePlaceholderSymbol = document.createElement("span");
+
+  imagePlaceholderSymbol.className = "pokemon-card__image-placeholder-symbol";
+
+  imagePlaceholderSymbol.textContent = "?";
+
+  imagePlaceholderSymbol.setAttribute("aria-hidden", "true");
+
+  imagePlaceholder.append(imagePlaceholderSymbol);
+
+  artwork.append(image, imagePlaceholder);
+
+  setupPokemonCardImage({
+    image,
+    placeholder: imagePlaceholder,
+    artwork,
+    pokemon,
+  });
 
   /* =======================================================
      INFO
