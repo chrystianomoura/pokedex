@@ -72,7 +72,7 @@ export function createPokemonSearch() {
 
   input.className = "pokemon-search__input";
 
-  input.type = "search";
+  input.type = "text";
 
   input.name = "pokemon-search";
 

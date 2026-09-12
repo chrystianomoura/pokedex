@@ -18,6 +18,8 @@ import { createFavoritesFeature } from "./features/favorites.js";
 
 import { createRouter } from "./router/router.js";
 
+import { getPokemonType } from "./data/pokemon-types.js";
+
 import { formatPokemonName } from "./utils/pokemon-name.js";
 
 /* =========================================================
@@ -28,6 +30,47 @@ const app = document.querySelector("#app");
 
 if (!app) {
   throw new Error('Elemento "#app" não encontrado.');
+}
+
+/* =========================================================
+   SCROLL RESTORATION
+   ========================================================= */
+
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+/* =========================================================
+   POKÉMON DETAIL — VIEWPORT THEME
+   ========================================================= */
+
+function setPokemonViewportTheme(pokemon) {
+  if (!pokemon?.primaryType) {
+    clearPokemonViewportTheme();
+
+    return;
+  }
+
+  const primaryType = getPokemonType(pokemon.primaryType);
+
+  if (!primaryType?.color) {
+    clearPokemonViewportTheme();
+
+    return;
+  }
+
+  document.documentElement.style.setProperty(
+    "--primary-type-color",
+    primaryType.color,
+  );
+
+  document.documentElement.classList.add("has-pokemon-detail-theme");
+}
+
+function clearPokemonViewportTheme() {
+  document.documentElement.style.removeProperty("--primary-type-color");
+
+  document.documentElement.classList.remove("has-pokemon-detail-theme");
 }
 
 /* =========================================================
@@ -928,6 +971,8 @@ function restoreHomeNavigationState() {
 async function mountHome() {
   pokemonDetailBackTarget = POKEMON_DETAIL_BACK_TARGETS.home;
 
+  clearPokemonViewportTheme();
+
   pokemonDetail?.destroy();
 
   pokemonDetail = null;
@@ -957,6 +1002,8 @@ async function mountHome() {
 
 async function mountFavorites() {
   pokemonDetailBackTarget = POKEMON_DETAIL_BACK_TARGETS.favorites;
+
+  clearPokemonViewportTheme();
 
   saveHomeNavigationState();
 
@@ -1005,6 +1052,8 @@ async function mountFavorites() {
    ========================================================= */
 
 async function mountPokemonRoute(route) {
+  clearPokemonViewportTheme();
+
   saveHomeNavigationState();
 
   pokemonFavorites?.destroy();
@@ -1060,10 +1109,34 @@ async function mountPokemonRoute(route) {
   }
 
   if (!loadedPokemon) {
+    clearPokemonViewportTheme();
+
     return;
   }
 
+  setPokemonViewportTheme(loadedPokemon);
+
   document.title = `${loadedPokemon.name} | Pokédex`;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (
+        router.currentRoute?.name !== "pokemon" ||
+        router.currentRoute?.params?.pokemon !== pokemon ||
+        pokemonDetail !== detailFeature
+      ) {
+        return;
+      }
+
+      window.scrollTo({
+        top: 0,
+
+        left: 0,
+
+        behavior: "instant",
+      });
+    });
+  });
 }
 
 /* =========================================================
@@ -1071,6 +1144,8 @@ async function mountPokemonRoute(route) {
    ========================================================= */
 
 function mountNotFound() {
+  clearPokemonViewportTheme();
+
   saveHomeNavigationState();
 
   pokemonDetail?.destroy();

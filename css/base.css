@@ -23,7 +23,13 @@
 }
 
 html {
+  width: 100%;
+  min-width: 0;
   min-height: 100%;
+
+  overflow-x: hidden;
+
+  background: var(--color-background);
 
   font-family: var(--font-primary);
 
@@ -32,11 +38,15 @@ html {
 }
 
 body {
-  min-width: 320px;
+  width: 100%;
+  min-width: 0;
+
   min-height: 100vh;
   min-height: 100dvh;
 
   margin: 0;
+
+  overflow-x: hidden;
 
   background: var(--color-background);
 
@@ -48,6 +58,69 @@ body {
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================================
+   POKÉMON DETAIL — SAFARI SAFE AREA
+   ========================================================= */
+
+/*
+ * Durante a rota de detalhe, o app.js coloca no <html>:
+ *
+ * --primary-type-color
+ * .has-pokemon-detail-theme
+ *
+ * O Safari pode mostrar regiões da tela que ficam fora da
+ * superfície visual do componente, principalmente ao redor
+ * da Dynamic Island e da área inferior do iPhone.
+ *
+ * Esta camada não substitui o fundo do detalhe.
+ * Ela existe atrás do aplicativo e utiliza exatamente o
+ * mesmo gradiente para preencher essas regiões.
+ */
+
+html.has-pokemon-detail-theme {
+  background: transparent;
+}
+
+html.has-pokemon-detail-theme body {
+  position: relative;
+
+  background: transparent;
+}
+
+html.has-pokemon-detail-theme body::before {
+  position: fixed;
+
+  z-index: 0;
+
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at 50% 18%,
+      color-mix(in srgb, var(--primary-type-color) 38%, #ffffff) 0%,
+      transparent 48%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary-type-color) 32%, #ffffff) 0%,
+      color-mix(in srgb, var(--primary-type-color) 26%, #ffffff) 42%,
+      color-mix(in srgb, var(--primary-type-color) 21%, #ffffff) 72%,
+      color-mix(in srgb, var(--primary-type-color) 18%, #ffffff) 100%
+    );
+
+  content: "";
+
+  pointer-events: none;
+}
+
+html.has-pokemon-detail-theme #app {
+  position: relative;
+
+  z-index: 1;
+
+  background: transparent;
 }
 
 [hidden] {
@@ -121,9 +194,12 @@ p {
 
 #app {
   width: 100%;
+  min-width: 0;
 
   min-height: 100vh;
   min-height: 100dvh;
+
+  overflow-x: hidden;
 }
 
 /* =========================================================
@@ -132,10 +208,20 @@ p {
 
 .pokedex-page {
   width: min(100%, 1180px);
+  min-width: 0;
+  max-width: 100%;
 
   margin: 0 auto;
 
   padding: var(--page-title-space) clamp(12px, 4vw, 32px) 48px;
+}
+
+/* =========================================================
+   POKÉMON DETAIL — SCROLL ANCHORING
+   ========================================================= */
+
+.pokedex-page__pokemon-detail {
+  overflow-anchor: none;
 }
 
 /* =========================================================
@@ -148,6 +234,8 @@ p {
   flex-direction: column;
 
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 
   margin-bottom: 20px;
 }
@@ -185,12 +273,18 @@ p {
 .pokedex-page__search-row {
   --home-control-height: 46px;
 
+  position: relative;
+
+  z-index: 10;
+
   display: flex;
 
   align-items: center;
   justify-content: center;
 
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 
   gap: 10px;
 
@@ -202,6 +296,10 @@ p {
    ========================================================= */
 
 .pokedex-page__search-row .pokemon-search {
+  position: relative;
+
+  z-index: 1;
+
   flex: 1 1 auto;
 
   min-width: 0;
@@ -215,11 +313,27 @@ p {
 
 .pokedex-page__search-row .pokemon-filters__toggle,
 .pokedex-page__search-row .pokedex-favorites-link {
+  position: relative;
+
+  z-index: 2;
+
   flex: 0 0 auto;
 
   align-self: center;
 
   margin: 0;
+}
+
+/* =========================================================
+   GENERATIONS HOST
+   ========================================================= */
+
+.pokedex-page__generations {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  overflow: hidden;
 }
 
 /* =========================================================
@@ -230,6 +344,8 @@ p {
   display: grid;
 
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
@@ -372,20 +488,17 @@ p {
    MOBILE / TABLET — PORTRAIT ONLY
    ========================================================= */
 
-@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
-  html,
-  body {
-    overflow: hidden;
-
-    overscroll-behavior: none;
-  }
-
-  #app,
-  noscript {
-    display: none;
-  }
-
-  .orientation-warning {
-    display: grid;
-  }
-}
+/*
+ * Não utilizar novamente:
+ *
+ * @media (orientation: landscape) and
+ *        (hover: none) and
+ *        (pointer: coarse)
+ *
+ * para esconder o #app.
+ *
+ * Em navegadores mobile, especialmente Chrome no iOS,
+ * a abertura do teclado virtual pode alterar a viewport
+ * e causar uma falsa detecção de landscape, removendo o
+ * input focado da renderização e fechando o teclado.
+ */
