@@ -11,7 +11,7 @@ export function createFavoritesLink() {
 
   link.className = "pokedex-favorites-link";
 
-  link.href = "/favorites";
+  link.href = "#/favorites";
 
   link.setAttribute("aria-label", "Abrir favoritos");
 
