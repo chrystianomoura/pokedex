@@ -6,9 +6,13 @@
    CONFIG
    ========================================================= */
 
-const IMAGE_RETRY_DELAYS = Object.freeze([250, 750]);
+const SOURCE_RETRY_DELAY = 350;
 
-const MAX_SOURCE_FAILURES = 2;
+const MAX_SESSION_SOURCE_FAILURES = 3;
+
+const RAW_GITHUB_HOST = "raw.githubusercontent.com";
+
+const JSDELIVR_HOST = "cdn.jsdelivr.net";
 
 /* =========================================================
    SESSION FAILURE MEMORY
@@ -33,11 +37,11 @@ function clearSourceFailure(source) {
 }
 
 function isSourceUnavailable(source) {
-  return getSourceFailureCount(source) >= MAX_SOURCE_FAILURES;
+  return getSourceFailureCount(source) >= MAX_SESSION_SOURCE_FAILURES;
 }
 
 /* =========================================================
-   SOURCE NORMALIZATION
+   NORMALIZATION
    ========================================================= */
 
 function normalizeSource(source) {
@@ -51,82 +55,193 @@ function normalizePokemonId(id) {
 }
 
 /* =========================================================
-   FALLBACK SOURCES
+   SOURCE INFORMATION
    ========================================================= */
 
-function getPokemonFallbackSources(id, { shiny = false } = {}) {
+function getSourceHostname(source) {
+  try {
+    return new URL(source, window.location.href).hostname;
+  } catch {
+    return "";
+  }
+}
+
+function isRawGitHubSource(source) {
+  return getSourceHostname(source) === RAW_GITHUB_HOST;
+}
+
+function isJsDelivrSource(source) {
+  return getSourceHostname(source) === JSDELIVR_HOST;
+}
+
+/* =========================================================
+   JSDELIVR SOURCES
+   ========================================================= */
+
+function getOfficialArtworkSource(
+  id,
+
+  { shiny = false } = {},
+) {
   const pokemonId = normalizePokemonId(id);
 
   if (!pokemonId) {
-    return [];
+    return "";
   }
 
-  if (shiny) {
-    return [
-      `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/shiny/${pokemonId}.png`,
-      `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/shiny/${pokemonId}.png`,
-    ];
+  const variantPath = shiny ? "shiny/" : "";
+
+  return (
+    "https://cdn.jsdelivr.net/gh/" +
+    "PokeAPI/sprites@master/" +
+    "sprites/pokemon/other/official-artwork/" +
+    `${variantPath}${pokemonId}.png`
+  );
+}
+
+function getStandardSpriteSource(
+  id,
+
+  { shiny = false } = {},
+) {
+  const pokemonId = normalizePokemonId(id);
+
+  if (!pokemonId) {
+    return "";
   }
 
-  return [
-    `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/${pokemonId}.png`,
-    `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${pokemonId}.png`,
-  ];
+  const variantPath = shiny ? "shiny/" : "";
+
+  return (
+    "https://cdn.jsdelivr.net/gh/" +
+    "PokeAPI/sprites@master/" +
+    "sprites/pokemon/" +
+    `${variantPath}${pokemonId}.png`
+  );
+}
+
+/* =========================================================
+   SOURCE CREATION
+   ========================================================= */
+
+function createSourceEntry(
+  source,
+
+  {
+    retry = false,
+
+    priority = 0,
+  } = {},
+) {
+  const normalizedSource = normalizeSource(source);
+
+  if (!normalizedSource) {
+    return null;
+  }
+
+  return {
+    source: normalizedSource,
+
+    retry,
+
+    priority,
+  };
 }
 
 /* =========================================================
    SOURCE LIST
    ========================================================= */
 
-function createSourceList({ id, source, shiny = false }) {
+function createSourceList({
+  id,
+
+  source,
+
+  shiny = false,
+}) {
   const sources = [];
 
   const primarySource = normalizeSource(source);
 
-  if (primarySource) {
-    sources.push({
-      source: primarySource,
+  const officialArtworkSource = getOfficialArtworkSource(
+    id,
 
-      allowRetry: true,
-    });
+    { shiny },
+  );
+
+  const standardSpriteSource = getStandardSpriteSource(
+    id,
+
+    { shiny },
+  );
+
+  /*
+   * A origem retornada pela PokéAPI normalmente aponta para
+   * raw.githubusercontent.com.
+   *
+   * Como esse host apresentou respostas 503 intermitentes,
+   * o espelho do jsDelivr passa a ser nossa primeira opção.
+   */
+
+  const officialArtworkEntry = createSourceEntry(
+    officialArtworkSource,
+
+    {
+      retry: true,
+
+      priority: 100,
+    },
+  );
+
+  if (officialArtworkEntry) {
+    sources.push(officialArtworkEntry);
   }
 
-  getPokemonFallbackSources(id, { shiny }).forEach((fallbackSource) => {
-    const alreadyIncluded = sources.some(
-      (item) => item.source === fallbackSource,
-    );
+  /*
+   * Mantemos a origem original como fallback.
+   *
+   * Se ela já for exatamente a mesma URL utilizada acima,
+   * não será adicionada novamente.
+   */
 
-    if (alreadyIncluded) {
-      return;
-    }
+  const primaryEntry = createSourceEntry(primarySource, {
+    retry: Boolean(primarySource) && !isRawGitHubSource(primarySource),
 
-    sources.push({
-      source: fallbackSource,
-
-      allowRetry: false,
-    });
+    priority: isRawGitHubSource(primarySource) ? 50 : 90,
   });
 
-  return sources;
-}
-
-/* =========================================================
-   RETRY URL
-   ========================================================= */
-
-function createRetryUrl(source) {
-  try {
-    const url = new URL(source, window.location.href);
-
-    url.searchParams.set(
-      "pokedex-retry",
-      `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
-
-    return url.href;
-  } catch {
-    return source;
+  if (
+    primaryEntry &&
+    !sources.some((item) => item.source === primaryEntry.source)
+  ) {
+    sources.push(primaryEntry);
   }
+
+  /*
+   * Último fallback visual:
+   * sprite padrão do repositório da PokéAPI.
+   */
+
+  const standardSpriteEntry = createSourceEntry(
+    standardSpriteSource,
+
+    {
+      retry: true,
+
+      priority: 10,
+    },
+  );
+
+  if (
+    standardSpriteEntry &&
+    !sources.some((item) => item.source === standardSpriteEntry.source)
+  ) {
+    sources.push(standardSpriteEntry);
+  }
+
+  return sources.sort(
+    (firstSource, secondSource) => secondSource.priority - firstSource.priority,
+  );
 }
 
 /* =========================================================
@@ -135,10 +250,15 @@ function createRetryUrl(source) {
 
 export function loadPokemonImage({
   image,
+
   id,
+
   source,
+
   shiny = false,
+
   onLoad,
+
   onUnavailable,
 } = {}) {
   if (!(image instanceof HTMLImageElement)) {
@@ -147,21 +267,27 @@ export function loadPokemonImage({
 
   const sources = createSourceList({
     id,
+
     source,
+
     shiny,
   });
 
   let sourceIndex = 0;
 
-  let retryIndex = 0;
-
   let currentSource = null;
+
+  let currentAttempt = 0;
 
   let retryTimeoutId = null;
 
   let disposed = false;
 
-  let loadToken = 0;
+  let requestToken = 0;
+
+  /* =======================================================
+     TIMEOUT
+     ======================================================= */
 
   function clearRetryTimeout() {
     if (retryTimeoutId === null) {
@@ -172,6 +298,10 @@ export function loadPokemonImage({
 
     retryTimeoutId = null;
   }
+
+  /* =======================================================
+     SOURCE SELECTION
+     ======================================================= */
 
   function getNextAvailableSource() {
     while (sourceIndex < sources.length) {
@@ -187,20 +317,32 @@ export function loadPokemonImage({
     return null;
   }
 
-  function setSource(sourceToLoad, { retry = false } = {}) {
+  /* =======================================================
+     SOURCE REQUEST
+     ======================================================= */
+
+  function requestSource(sourceToLoad) {
     if (disposed) {
       return;
     }
 
-    loadToken += 1;
+    requestToken += 1;
 
-    image.src = retry ? createRetryUrl(sourceToLoad) : sourceToLoad;
+    image.hidden = false;
+
+    image.src = sourceToLoad;
   }
+
+  /* =======================================================
+     UNAVAILABLE
+     ======================================================= */
 
   function markUnavailable() {
     clearRetryTimeout();
 
     currentSource = null;
+
+    currentAttempt = 0;
 
     image.removeAttribute("src");
 
@@ -211,10 +353,14 @@ export function loadPokemonImage({
     }
   }
 
+  /* =======================================================
+     NEXT SOURCE
+     ======================================================= */
+
   function loadNextSource() {
     clearRetryTimeout();
 
-    retryIndex = 0;
+    currentAttempt = 0;
 
     currentSource = getNextAvailableSource();
 
@@ -224,42 +370,52 @@ export function loadPokemonImage({
       return;
     }
 
-    image.hidden = false;
-
-    setSource(currentSource.source);
+    requestSource(currentSource.source);
   }
 
+  /* =======================================================
+     RETRY
+     ======================================================= */
+
   function scheduleRetry() {
-    if (!currentSource?.allowRetry) {
+    if (!currentSource?.retry) {
       loadNextSource();
 
       return;
     }
 
-    const delay = IMAGE_RETRY_DELAYS[retryIndex];
+    /*
+     * Cada fonte recebe no máximo uma nova tentativa.
+     *
+     * A tentativa é independente da memória de falhas da
+     * sessão. Isso evita o bug anterior em que o limite
+     * global impedia o retry planejado.
+     */
 
-    if (delay === undefined) {
+    if (currentAttempt >= 1) {
       loadNextSource();
 
       return;
     }
 
-    retryIndex += 1;
+    currentAttempt += 1;
 
-    const token = loadToken;
+    const token = requestToken;
 
     retryTimeoutId = window.setTimeout(() => {
       retryTimeoutId = null;
 
-      if (disposed || token !== loadToken) {
+      if (disposed || token !== requestToken || !currentSource) {
         return;
       }
 
-      setSource(currentSource.source, {
-        retry: true,
-      });
-    }, delay);
+      requestSource(currentSource.source);
+    }, SOURCE_RETRY_DELAY);
   }
+
+  /* =======================================================
+     LOAD
+     ======================================================= */
 
   function handleLoad() {
     if (disposed || !currentSource) {
@@ -275,9 +431,17 @@ export function loadPokemonImage({
     if (typeof onLoad === "function") {
       onLoad(image, {
         source: currentSource.source,
+
+        host: getSourceHostname(currentSource.source),
+
+        fallback: sourceIndex > 1 || isJsDelivrSource(currentSource.source),
       });
     }
   }
+
+  /* =======================================================
+     ERROR
+     ======================================================= */
 
   function handleError() {
     if (disposed || !currentSource) {
@@ -288,6 +452,25 @@ export function loadPokemonImage({
 
     registerSourceFailure(currentSource.source);
 
+    /*
+     * raw.githubusercontent.com foi a origem que observamos
+     * devolvendo HTTP 503.
+     *
+     * Não insistimos nela: falhou uma vez, seguimos para a
+     * próxima origem imediatamente.
+     */
+
+    if (isRawGitHubSource(currentSource.source)) {
+      loadNextSource();
+
+      return;
+    }
+
+    /*
+     * Se essa fonte já apresentou muitas falhas durante a
+     * sessão, também não insistimos.
+     */
+
     if (isSourceUnavailable(currentSource.source)) {
       loadNextSource();
 
@@ -297,15 +480,27 @@ export function loadPokemonImage({
     scheduleRetry();
   }
 
+  /* =======================================================
+     EVENTS
+     ======================================================= */
+
   image.addEventListener("load", handleLoad);
 
   image.addEventListener("error", handleError);
+
+  /* =======================================================
+     START
+     ======================================================= */
 
   if (sources.length === 0) {
     markUnavailable();
   } else {
     loadNextSource();
   }
+
+  /* =======================================================
+     DISPOSE
+     ======================================================= */
 
   return function disposePokemonImageLoader() {
     disposed = true;
