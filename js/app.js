@@ -102,7 +102,7 @@ const homeNavigationState = {
 
 const POKEMON_DETAIL_BACK_TARGETS = Object.freeze({
   home: Object.freeze({
-    href: "/",
+    href: "#/",
 
     label: "Pokédex",
 
@@ -110,7 +110,7 @@ const POKEMON_DETAIL_BACK_TARGETS = Object.freeze({
   }),
 
   favorites: Object.freeze({
-    href: "/favorites",
+    href: "#/favorites",
 
     label: "Favoritos",
 
@@ -425,7 +425,7 @@ function createFavoritesBackLink() {
 
   link.className = "pokedex-page__favorites-back";
 
-  link.href = "/";
+  link.href = "#/";
 
   link.setAttribute("aria-label", "Voltar para a Pokédex");
 
@@ -1093,7 +1093,7 @@ function mountNotFound() {
 
   const backLink = document.createElement("a");
 
-  backLink.href = "/";
+  backLink.href = "#/";
 
   backLink.textContent = "Voltar para a Pokédex";
 
@@ -1159,3 +1159,21 @@ function formatPokemonRouteName(pokemon) {
    ========================================================= */
 
 router.start();
+
+/* =========================================================
+   SERVICE WORKER
+   ========================================================= */
+
+registerServiceWorker();
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((error) => {
+      console.error("Falha ao registrar o Service Worker:", error);
+    });
+  });
+}
