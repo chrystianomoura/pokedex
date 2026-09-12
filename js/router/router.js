@@ -28,7 +28,7 @@ export function createRouter({
 
     document.addEventListener("click", handleDocumentClick);
 
-    migrateLegacyPath();
+    ensureHashRoute();
 
     resolveCurrentRoute({
       replace: true,
@@ -146,17 +146,13 @@ export function createRouter({
       return;
     }
 
-    const url = new URL(link.href, window.location.href);
+    const rawHref = link.getAttribute("href");
 
-    if (url.origin !== window.location.origin) {
+    if (typeof rawHref !== "string" || !rawHref.startsWith("#/")) {
       return;
     }
 
-    const applicationPath = getApplicationPathFromUrl(url, normalizedBasePath);
-
-    if (applicationPath === null) {
-      return;
-    }
+    const applicationPath = normalizeApplicationPath(rawHref.slice(1));
 
     event.preventDefault();
 
@@ -164,28 +160,15 @@ export function createRouter({
   }
 
   /* =======================================================
-     LEGACY PATH MIGRATION
+     INITIAL HASH
      ======================================================= */
 
-  function migrateLegacyPath() {
-    if (window.location.hash) {
+  function ensureHashRoute() {
+    if (window.location.hash.startsWith("#/")) {
       return;
     }
 
-    const legacyPath = getApplicationPathFromPathname(
-      window.location.pathname,
-      normalizedBasePath,
-    );
-
-    if (legacyPath === null || legacyPath === "/") {
-      return;
-    }
-
-    const suffix = window.location.search;
-
-    const applicationPath = `${legacyPath}${suffix}`;
-
-    const browserPath = createBrowserPath(applicationPath, normalizedBasePath);
+    const browserPath = createBrowserPath("/", normalizedBasePath);
 
     window.history.replaceState(window.history.state, "", browserPath);
   }
@@ -365,51 +348,11 @@ function getPathSegments(pathname) {
 function getApplicationPathFromHash() {
   const hash = window.location.hash;
 
-  if (!hash || hash === "#") {
+  if (!hash || hash === "#" || !hash.startsWith("#/")) {
     return "/";
   }
 
-  const rawPath = hash.slice(1);
-
-  return normalizeApplicationPath(rawPath);
-}
-
-/* =========================================================
-   LINKS
-   ========================================================= */
-
-function getApplicationPathFromUrl(url, basePath) {
-  /*
-   * Link já usando hash routing.
-   *
-   * Exemplo:
-   *
-   * /pokedex/#/pokemon/pikachu
-   */
-
-  if (url.hash.startsWith("#/")) {
-    return normalizeApplicationPath(url.hash.slice(1));
-  }
-
-  /*
-   * Compatibilidade temporária com links antigos.
-   *
-   * Exemplo:
-   *
-   * /pokemon/pikachu
-   *
-   * ou:
-   *
-   * /pokedex/pokemon/pikachu
-   */
-
-  const pathname = getApplicationPathFromPathname(url.pathname, basePath);
-
-  if (pathname === null) {
-    return null;
-  }
-
-  return normalizeApplicationPath(`${pathname}${url.search}`);
+  return normalizeApplicationPath(hash.slice(1));
 }
 
 /* =========================================================
@@ -431,27 +374,9 @@ function getDocumentBasePath() {
     return "";
   }
 
-  /*
-   * Se o documento foi acessado explicitamente como
-   * index.html, removemos o nome do arquivo.
-   *
-   * /pokedex/index.html -> /pokedex
-   */
-
   if (pathname.toLowerCase().endsWith("/index.html")) {
     return normalizeBasePath(pathname.slice(0, -"/index.html".length));
   }
-
-  /*
-   * No hash routing, o pathname representa a raiz física
-   * da aplicação.
-   *
-   * Local:
-   * /
-   *
-   * GitHub Pages:
-   * /pokedex/
-   */
 
   return normalizeBasePath(pathname);
 }
@@ -478,26 +403,6 @@ function normalizeBasePath(basePath) {
   }
 
   return normalized;
-}
-
-function getApplicationPathFromPathname(pathname, basePath) {
-  const normalizedPathname = normalizePathname(pathname);
-
-  if (!basePath) {
-    return normalizedPathname;
-  }
-
-  if (normalizedPathname === basePath) {
-    return "/";
-  }
-
-  if (!normalizedPathname.startsWith(`${basePath}/`)) {
-    return null;
-  }
-
-  const applicationPath = normalizedPathname.slice(basePath.length);
-
-  return normalizePathname(applicationPath);
 }
 
 /* =========================================================
