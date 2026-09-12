@@ -1,11 +1,15 @@
 /* =========================================================
-   POKÉDEX — SEARCH COMPONENT
+   POKÉDEX — POKÉMON SEARCH
    ========================================================= */
 
-export function createPokemonSearch({ onSearch, onClear } = {}) {
-  const search = document.createElement("search");
+export function createPokemonSearch() {
+  /* =======================================================
+     ROOT
+     ======================================================= */
 
-  search.className = "pokemon-search";
+  const element = document.createElement("div");
+
+  element.className = "pokemon-search";
 
   /* =======================================================
      FORM
@@ -40,8 +44,6 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
   icon.innerHTML = `
     <svg
       viewBox="0 0 24 24"
-      width="20"
-      height="20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -52,6 +54,7 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
         stroke="currentColor"
         stroke-width="1.8"
       />
+
       <path
         d="M16 16L20 20"
         stroke="currentColor"
@@ -71,13 +74,11 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
 
   input.type = "search";
 
-  input.name = "pokemon";
+  input.name = "pokemon-search";
 
   input.placeholder = "Buscar Pokémon ou número";
 
   input.autocomplete = "off";
-
-  input.autocapitalize = "none";
 
   input.spellcheck = false;
 
@@ -86,7 +87,7 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
   input.setAttribute("aria-label", "Buscar Pokémon por nome ou número");
 
   /* =======================================================
-     CLEAR BUTTON
+     CLEAR
      ======================================================= */
 
   const clearButton = document.createElement("button");
@@ -102,8 +103,6 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
   clearButton.innerHTML = `
     <svg
       viewBox="0 0 24 24"
-      width="18"
-      height="18"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
@@ -114,6 +113,7 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
         stroke-width="1.8"
         stroke-linecap="round"
       />
+
       <path
         d="M17 7L7 17"
         stroke="currentColor"
@@ -131,102 +131,11 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
 
   status.className = "pokemon-search__status";
 
-  status.hidden = true;
-
   status.setAttribute("aria-live", "polite");
 
-  /* =======================================================
-     INTERNAL STATE
-     ======================================================= */
+  status.setAttribute("aria-atomic", "true");
 
-  function updateClearButton() {
-    clearButton.hidden = input.value.length === 0;
-  }
-
-  /* =======================================================
-     EVENTS — INPUT
-     ======================================================= */
-
-  function handleInput() {
-    updateClearButton();
-
-    if (typeof onSearch === "function") {
-      onSearch(input.value);
-    }
-  }
-
-  /* =======================================================
-     EVENTS — SUBMIT
-     ======================================================= */
-
-  function handleSubmit(event) {
-    event.preventDefault();
-
-    if (typeof onSearch === "function") {
-      onSearch(input.value);
-    }
-  }
-
-  /* =======================================================
-     EVENTS — CLEAR
-     ======================================================= */
-
-  function handleClear() {
-    input.value = "";
-
-    updateClearButton();
-
-    setStatus("");
-
-    /*
-     * Dispara o mesmo fluxo utilizado quando o usuário
-     * apaga manualmente o conteúdo do campo.
-     *
-     * Isso permite que o app encerre o modo de pesquisa
-     * e restaure a National Dex.
-     */
-    input.dispatchEvent(
-      new Event("input", {
-        bubbles: true,
-      }),
-    );
-
-    if (typeof onClear === "function") {
-      onClear();
-    }
-
-    input.focus();
-  }
-
-  /* =======================================================
-     EVENT LISTENERS
-     ======================================================= */
-
-  input.addEventListener("input", handleInput);
-
-  form.addEventListener("submit", handleSubmit);
-
-  clearButton.addEventListener("click", handleClear);
-
-  /* =======================================================
-     PUBLIC HELPERS
-     ======================================================= */
-
-  function setStatus(message) {
-    status.textContent = message;
-
-    status.hidden = !message;
-  }
-
-  function setValue(value) {
-    input.value = value ?? "";
-
-    updateClearButton();
-  }
-
-  function focus() {
-    input.focus();
-  }
+  status.hidden = true;
 
   /* =======================================================
      ASSEMBLY
@@ -236,13 +145,113 @@ export function createPokemonSearch({ onSearch, onClear } = {}) {
 
   form.append(field);
 
-  search.append(form, status);
+  element.append(form, status);
+
+  /* =======================================================
+     CLEAR BUTTON STATE
+     ======================================================= */
+
+  function updateClearButton() {
+    clearButton.hidden = input.value.length === 0;
+  }
+
+  /* =======================================================
+     STATUS
+     ======================================================= */
+
+  function setStatus(message = "") {
+    const normalizedMessage = String(message ?? "").trim();
+
+    status.textContent = normalizedMessage;
+
+    status.hidden = normalizedMessage.length === 0;
+  }
+
+  /* =======================================================
+     VALUE
+     ======================================================= */
+
+  function setValue(value = "", { dispatch = false } = {}) {
+    input.value = String(value ?? "");
+
+    updateClearButton();
+
+    if (dispatch) {
+      input.dispatchEvent(
+        new Event("input", {
+          bubbles: true,
+        }),
+      );
+    }
+  }
+
+  /* =======================================================
+     FOCUS
+     ======================================================= */
+
+  function focus() {
+    input.focus();
+  }
+
+  /* =======================================================
+     EVENTS
+     ======================================================= */
+
+  input.addEventListener("input", () => {
+    updateClearButton();
+  });
+
+  clearButton.addEventListener("click", () => {
+    if (input.value.length === 0) {
+      input.focus();
+
+      return;
+    }
+
+    input.value = "";
+
+    updateClearButton();
+
+    input.dispatchEvent(
+      new Event("input", {
+        bubbles: true,
+      }),
+    );
+
+    input.focus();
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+  });
+
+  /* =======================================================
+     INITIAL STATE
+     ======================================================= */
+
+  updateClearButton();
+
+  /* =======================================================
+     PUBLIC API
+     ======================================================= */
 
   return {
-    element: search,
+    element,
+
+    form,
+
+    field,
+
     input,
+
+    clearButton,
+
+    status,
+
     setStatus,
+
     setValue,
+
     focus,
   };
 }

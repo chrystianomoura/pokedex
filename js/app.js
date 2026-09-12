@@ -157,10 +157,6 @@ function createHomePage() {
 
   const search = createPokemonSearch();
 
-  const favoritesLink = createFavoritesLink();
-
-  searchRow.append(search.element, favoritesLink);
-
   /* =======================================================
      FILTERS
      ======================================================= */
@@ -170,6 +166,17 @@ function createHomePage() {
 
     onClear: handleClearPokemonFilters,
   });
+
+  const favoritesLink = createFavoritesLink();
+
+  /*
+   * O botão de filtros pertence visualmente à mesma linha
+   * da pesquisa e dos favoritos. O painel continua dentro
+   * de filters.element para manter seu próprio contexto de
+   * posicionamento e não disputar largura com a barra.
+   */
+
+  searchRow.append(search.element, filters.toggleButton, favoritesLink);
 
   /* =======================================================
      GENERATIONS
@@ -358,17 +365,9 @@ function createFavoritesPage() {
 
   page.className = "pokedex-page pokedex-page--favorites";
 
-  /* =======================================================
-     HEADER
-     ======================================================= */
-
   const header = document.createElement("header");
 
   header.className = "pokedex-page__header pokedex-page__favorites-header";
-
-  /* =======================================================
-     TITLE ROW
-     ======================================================= */
 
   const titleRow = document.createElement("div");
 
@@ -392,10 +391,6 @@ function createFavoritesPage() {
 
   header.append(titleRow);
 
-  /* =======================================================
-     EMPTY / ERROR STATE
-     ======================================================= */
-
   const emptyState = document.createElement("p");
 
   emptyState.className = "pokedex-page__favorites-empty";
@@ -404,19 +399,11 @@ function createFavoritesPage() {
 
   emptyState.hidden = true;
 
-  /* =======================================================
-     GRID
-     ======================================================= */
-
   const grid = document.createElement("section");
 
   grid.className = "pokemon-grid pokemon-grid--favorites";
 
   grid.setAttribute("aria-label", "Pokémon favoritos");
-
-  /* =======================================================
-     ASSEMBLY
-     ======================================================= */
 
   page.append(header, emptyState, grid);
 
@@ -475,10 +462,6 @@ async function handleApplyPokemonFilters(nextFilters) {
 
   const interactionId = filterInteractionId;
 
-  /* =======================================================
-     DEFAULT FILTERS
-     ======================================================= */
-
   if (!homeView.filters.isActive) {
     pokemonFilters.clear();
 
@@ -491,21 +474,13 @@ async function handleApplyPokemonFilters(nextFilters) {
     return;
   }
 
-  /* =======================================================
-     ADVANCED FILTER MODE
-     ======================================================= */
-
   pokemonSearch.suspend();
 
   homeView.search.setStatus("Aplicando filtros...");
 
-  await pokemonFilters.apply(
-    nextFilters,
-
-    {
-      searchQuery: homeView.search.input.value,
-    },
-  );
+  await pokemonFilters.apply(nextFilters, {
+    searchQuery: homeView.search.input.value,
+  });
 
   if (interactionId !== filterInteractionId) {
     return;
@@ -551,13 +526,9 @@ async function handleDelegatedPokemonSearch(query) {
 
   homeView.search.setStatus("Buscando Pokémon...");
 
-  await pokemonFilters.apply(
-    homeView.filters.getFilters(),
-
-    {
-      searchQuery: query,
-    },
-  );
+  await pokemonFilters.apply(homeView.filters.getFilters(), {
+    searchQuery: query,
+  });
 
   if (interactionId !== filterInteractionId) {
     return;
@@ -578,11 +549,6 @@ function updateFilteredSearchStatus() {
   }
 
   const total = pokemonFilters.totalPokemon;
-
-  /*
-   * O estado de zero resultados pertence à Filters Feature.
-   * Assim evitamos repetir a mesma mensagem abaixo da busca.
-   */
 
   if (total === 0) {
     homeView.search.setStatus("");
@@ -605,31 +571,17 @@ function updateFilteredSearchStatus() {
 
 function updateHomeView({
   grid,
-
   generationGrid,
-
   searchGrid,
-
   filterGrid,
-
   filterEmptyState,
-
   sentinel,
-
   generationSentinel,
-
   searchSentinel,
-
   filterSentinel,
-
   loadMoreButton,
-
   generationHost,
 }) {
-  /* =======================================================
-     FILTERS
-     ======================================================= */
-
   if (pokemonFilters?.isActive) {
     grid.hidden = true;
 
@@ -647,21 +599,12 @@ function updateHomeView({
 
     generationHost.hidden = true;
 
-    /*
-     * A própria Filters Feature decide se o botão deve
-     * aparecer. Em zero resultados ele permanece oculto.
-     */
-
     pokemonFilters.updateSentinel();
 
     pokemonFilters.updateLoadMoreButton();
 
     return;
   }
-
-  /* =======================================================
-     FILTER MODE CLEANUP
-     ======================================================= */
 
   filterGrid.hidden = true;
 
@@ -670,10 +613,6 @@ function updateHomeView({
   filterEmptyState.hidden = true;
 
   generationHost.hidden = false;
-
-  /* =======================================================
-     SEARCH
-     ======================================================= */
 
   if (pokemonSearch?.isActive) {
     grid.hidden = true;
@@ -692,10 +631,6 @@ function updateHomeView({
 
     return;
   }
-
-  /* =======================================================
-     GENERATION
-     ======================================================= */
 
   if (pokemonGenerations?.isActive) {
     grid.hidden = true;
@@ -717,10 +652,6 @@ function updateHomeView({
 
     return;
   }
-
-  /* =======================================================
-     NATIONAL DEX
-     ======================================================= */
 
   grid.hidden = false;
 
@@ -790,43 +721,23 @@ async function initializeHomeFeatures() {
 
   const {
     grid,
-
     generationGrid,
-
     searchGrid,
-
     filterGrid,
-
     filterEmptyState,
-
     sentinel,
-
     generationSentinel,
-
     searchSentinel,
-
     filterSentinel,
-
     loadMoreButton,
-
     generationHost,
-
     search,
-
     filters,
   } = homeView;
-
-  /* =======================================================
-     VIEW CALLBACK
-     ======================================================= */
 
   function handleModeChange() {
     updateCurrentHomeView();
   }
-
-  /* =======================================================
-     SEARCH MODE CALLBACK
-     ======================================================= */
 
   function handleSearchModeChange(isSearchActive) {
     handleModeChange();
@@ -834,15 +745,6 @@ async function initializeHomeFeatures() {
     if (isSearchActive) {
       return;
     }
-
-    /*
-     * A Search Feature pode ser suspensa durante uma troca
-     * de geração.
-     *
-     * Esperamos o restante da operação síncrona terminar
-     * antes de decidir se a grade da geração precisa ser
-     * retomada.
-     */
 
     queueMicrotask(() => {
       if (
@@ -858,10 +760,6 @@ async function initializeHomeFeatures() {
     });
   }
 
-  /* =======================================================
-     FILTERS FEATURE
-     ======================================================= */
-
   pokemonFilters = createPokemonFiltersFeature({
     grid: filterGrid,
 
@@ -873,10 +771,6 @@ async function initializeHomeFeatures() {
 
     onModeChange: handleModeChange,
   });
-
-  /* =======================================================
-     SEARCH FEATURE
-     ======================================================= */
 
   pokemonSearch = createPokemonSearchFeature({
     search,
@@ -902,10 +796,6 @@ async function initializeHomeFeatures() {
     },
   });
 
-  /* =======================================================
-     GENERATIONS FEATURE
-     ======================================================= */
-
   pokemonGenerations = createPokemonGenerationsFeature({
     generationHost,
 
@@ -920,12 +810,6 @@ async function initializeHomeFeatures() {
     searchFeature: pokemonSearch,
 
     onModeChange: () => {
-      /*
-       * Se o usuário escolher uma geração pelos chips
-       * enquanto filtros avançados estiverem ativos,
-       * saímos do modo avançado.
-       */
-
       if (filters.isActive) {
         filterInteractionId += 1;
 
@@ -941,10 +825,6 @@ async function initializeHomeFeatures() {
       handleModeChange();
     },
   });
-
-  /* =======================================================
-     NATIONAL DEX FEATURE
-     ======================================================= */
 
   nationalDex = createNationalDexFeature({
     grid,
@@ -962,32 +842,16 @@ async function initializeHomeFeatures() {
     },
   });
 
-  /* =======================================================
-     LOAD MORE
-     ======================================================= */
-
   loadMoreButton.addEventListener("click", () => {
-    /* ===================================================
-       FILTERS
-       =================================================== */
-
     if (pokemonFilters.isActive) {
       void pokemonFilters.loadNextBatch();
 
       return;
     }
 
-    /* ===================================================
-       SEARCH
-       =================================================== */
-
     if (pokemonSearch.isActive) {
       return;
     }
-
-    /* ===================================================
-       GENERATION
-       =================================================== */
 
     if (pokemonGenerations.isActive) {
       void pokemonGenerations.loadNextBatch();
@@ -995,16 +859,8 @@ async function initializeHomeFeatures() {
       return;
     }
 
-    /* ===================================================
-       NATIONAL DEX
-       =================================================== */
-
     void nationalDex.loadMore();
   });
-
-  /* =======================================================
-     FEATURE INIT
-     ======================================================= */
 
   pokemonFilters.init();
 
@@ -1014,10 +870,6 @@ async function initializeHomeFeatures() {
 
   await pokemonGenerations.init();
 
-  /* =======================================================
-     INITIAL VIEW
-     ======================================================= */
-
   handleModeChange();
 }
 
@@ -1026,18 +878,6 @@ async function initializeHomeFeatures() {
    ========================================================= */
 
 function saveHomeNavigationState() {
-  /*
-   * O estado da Home só pode ser atualizado enquanto ela
-   * estiver realmente montada no app.
-   *
-   * Ao navegar entre páginas de detalhe — por exemplo,
-   * Ivysaur -> Venusaur pela árvore de evolução — homeView
-   * continua existindo em memória, mas não está mais no DOM.
-   *
-   * Sem esta verificação, o scroll da página de detalhe
-   * sobrescrevia o scroll salvo da Pokédex.
-   */
-
   if (!homeView || !app.contains(homeView.page)) {
     return;
   }
@@ -1098,14 +938,6 @@ async function mountHome() {
 
   await initializeHome();
 
-  /*
-   * A inicialização da Home é assíncrona.
-   *
-   * Durante os awaits acima, a rota pode ter mudado.
-   * Nesse caso, esta renderização ficou obsoleta e não deve
-   * substituir a página correspondente à rota atual.
-   */
-
   if (router.currentRoute?.name !== "home") {
     return;
   }
@@ -1136,10 +968,6 @@ async function mountFavorites() {
 
   pokemonFavorites = null;
 
-  /* =======================================================
-     PAGE
-     ======================================================= */
-
   const favoritesView = createFavoritesPage();
 
   app.replaceChildren(favoritesView.page);
@@ -1154,10 +982,6 @@ async function mountFavorites() {
 
   document.title = "Favoritos | Pokédex";
 
-  /* =======================================================
-     FEATURE
-     ======================================================= */
-
   const favoritesFeature = createFavoritesFeature({
     grid: favoritesView.grid,
 
@@ -1167,13 +991,6 @@ async function mountFavorites() {
   pokemonFavorites = favoritesFeature;
 
   await favoritesFeature.init();
-
-  /*
-   * O carregamento dos favoritos é assíncrono.
-   *
-   * Se a rota mudar durante a requisição, a feature anterior
-   * já terá sido destruída e não deve continuar ativa.
-   */
 
   if (
     router.currentRoute?.name !== "favorites" ||
@@ -1200,17 +1017,9 @@ async function mountPokemonRoute(route) {
 
   const pokemon = route.params.pokemon;
 
-  /* =======================================================
-     PAGE
-     ======================================================= */
-
   const page = document.createElement("main");
 
   page.className = "pokedex-page";
-
-  /* =======================================================
-     DETAIL HOST
-     ======================================================= */
 
   const detailHost = document.createElement("div");
 
@@ -1228,10 +1037,6 @@ async function mountPokemonRoute(route) {
     behavior: "instant",
   });
 
-  /* =======================================================
-     FEATURE
-     ======================================================= */
-
   const detailFeature = createPokemonDetailFeature({
     host: detailHost,
 
@@ -1240,27 +1045,11 @@ async function mountPokemonRoute(route) {
 
   pokemonDetail = detailFeature;
 
-  /* =======================================================
-     INITIAL TITLE
-     ======================================================= */
-
   const routeName = formatPokemonRouteName(pokemon);
 
   document.title = `${routeName} | Pokédex`;
 
-  /* =======================================================
-     LOAD
-     ======================================================= */
-
   const loadedPokemon = await detailFeature.load(pokemon);
-
-  /*
-   * O carregamento da PokéAPI é assíncrono.
-   *
-   * A rota pode mudar antes da resposta chegar.
-   * Nesse caso, não atualizamos o título nem qualquer
-   * estado pertencente à rota antiga.
-   */
 
   if (
     router.currentRoute?.name !== "pokemon" ||

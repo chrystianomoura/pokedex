@@ -5,42 +5,9 @@
 .pokemon-generation {
   width: 100%;
 
-  margin: 14px 0 0;
+  margin: clamp(28px, 7vw, 36px) 0 0;
 
   padding: 0;
-}
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
-.pokemon-generation__header {
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-
-  margin: 0 0 8px;
-
-  padding: 0;
-}
-
-.pokemon-generation__title {
-  margin: 0;
-  padding: 0;
-
-  color: var(--color-text);
-
-  font-size: 0.82rem;
-  font-weight: 800;
-
-  line-height: 1;
-
-  letter-spacing: -0.02em;
-
-  text-align: center;
 }
 
 /* =========================================================
@@ -141,22 +108,28 @@
 }
 
 /* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 359px) {
+  .pokemon-generation__list {
+    gap: 7px;
+  }
+
+  .pokemon-generation__button {
+    min-height: 34px;
+
+    padding: 7px 11px;
+
+    font-size: 0.68rem;
+  }
+}
+
+/* =========================================================
    TABLET
    ========================================================= */
 
 @media (min-width: 600px) {
-  .pokemon-generation {
-    margin-top: 16px;
-  }
-
-  .pokemon-generation__header {
-    margin-bottom: 9px;
-  }
-
-  .pokemon-generation__title {
-    font-size: 0.86rem;
-  }
-
   .pokemon-generation__list {
     gap: 9px;
   }
@@ -175,10 +148,6 @@
    ========================================================= */
 
 @media (min-width: 900px) {
-  .pokemon-generation {
-    margin-top: 18px;
-  }
-
   .pokemon-generation__list {
     flex-wrap: wrap;
 
@@ -209,36 +178,6 @@
     transform: translateY(-1px);
 
     box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
-  }
-}
-
-/* =========================================================
-   SMALL MOBILE
-   ========================================================= */
-
-@media (max-width: 359px) {
-  .pokemon-generation {
-    margin-top: 12px;
-  }
-
-  .pokemon-generation__header {
-    margin-bottom: 7px;
-  }
-
-  .pokemon-generation__title {
-    font-size: 0.78rem;
-  }
-
-  .pokemon-generation__list {
-    gap: 7px;
-  }
-
-  .pokemon-generation__button {
-    min-height: 34px;
-
-    padding: 7px 11px;
-
-    font-size: 0.68rem;
   }
 }
 

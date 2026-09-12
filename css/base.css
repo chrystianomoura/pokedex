@@ -174,10 +174,6 @@ p {
   text-align: center;
 }
 
-/*
- * O título principal da Home pode ser maior sem afetar
- * Favoritos ou estados auxiliares que reutilizam a mesma classe.
- */
 .pokedex-page__header > .pokedex-page__title {
   font-size: clamp(2.45rem, 9.5vw, 4rem);
 }
@@ -187,6 +183,8 @@ p {
    ========================================================= */
 
 .pokedex-page__search-row {
+  --home-control-height: 46px;
+
   display: flex;
 
   align-items: center;
@@ -196,13 +194,30 @@ p {
 
   gap: 10px;
 
-  margin: 0 auto;
+  margin: 0 auto 10px;
 }
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
 .pokedex-page__search-row .pokemon-search {
   flex: 1 1 auto;
 
   min-width: 0;
+
+  margin: 0;
+}
+
+/* =========================================================
+   FILTER + FAVORITES
+   ========================================================= */
+
+.pokedex-page__search-row .pokemon-filters__toggle,
+.pokedex-page__search-row .pokedex-favorites-link {
+  flex: 0 0 auto;
+
+  align-self: center;
 
   margin: 0;
 }
@@ -222,14 +237,32 @@ p {
 }
 
 /* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 359px) {
+  .pokedex-page__search-row {
+    --home-control-height: 42px;
+
+    gap: 8px;
+
+    margin-bottom: 9px;
+  }
+}
+
+/* =========================================================
    TABLET
    ========================================================= */
 
 @media (min-width: 600px) {
   .pokedex-page__search-row {
+    --home-control-height: 48px;
+
     width: min(100%, 574px);
 
     gap: 12px;
+
+    margin-bottom: 10px;
   }
 
   .pokemon-grid {
@@ -245,7 +278,11 @@ p {
 
 @media (min-width: 900px) {
   .pokedex-page__search-row {
+    --home-control-height: 50px;
+
     width: min(100%, 614px);
+
+    margin-bottom: 10px;
   }
 
   .pokemon-grid {
@@ -258,16 +295,6 @@ p {
 @media (min-width: 1180px) {
   .pokemon-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-/* =========================================================
-   SMALL MOBILE
-   ========================================================= */
-
-@media (max-width: 359px) {
-  .pokedex-page__search-row {
-    gap: 8px;
   }
 }
 

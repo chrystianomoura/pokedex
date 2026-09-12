@@ -6,9 +6,7 @@ import { getPokemonTypeName } from "../data/pokemon-types.js";
 
 const DEFAULT_FILTERS = Object.freeze({
   type: "all",
-
   generation: 0,
-
   sort: "number-asc",
 });
 
@@ -36,25 +34,18 @@ const POKEMON_TYPES = [
 const SORT_OPTIONS = [
   {
     value: "number-asc",
-
     label: "Número crescente",
   },
-
   {
     value: "number-desc",
-
     label: "Número decrescente",
   },
-
   {
     value: "name-asc",
-
     label: "A–Z",
   },
-
   {
     value: "name-desc",
-
     label: "Z–A",
   },
 ];
@@ -67,13 +58,10 @@ let filterInstanceCount = 0;
 
 export function createPokemonFilters({
   initialFilters = DEFAULT_FILTERS,
-
   onApply = null,
-
   onClear = null,
 } = {}) {
   validateCallback(onApply, "onApply");
-
   validateCallback(onClear, "onClear");
 
   filterInstanceCount += 1;
@@ -152,15 +140,9 @@ export function createPokemonFilters({
      TYPE
      ======================================================= */
 
-  const {
-    field: typeField,
-
-    select: typeSelect,
-  } = createSelectField({
+  const { field: typeField, select: typeSelect } = createSelectField({
     id: `${instanceId}-type`,
-
     label: "Tipo",
-
     options: createTypeOptions(),
   });
 
@@ -168,31 +150,20 @@ export function createPokemonFilters({
      GENERATION
      ======================================================= */
 
-  const {
-    field: generationField,
-
-    select: generationSelect,
-  } = createSelectField({
-    id: `${instanceId}-generation`,
-
-    label: "Geração",
-
-    options: createGenerationOptions(),
-  });
+  const { field: generationField, select: generationSelect } =
+    createSelectField({
+      id: `${instanceId}-generation`,
+      label: "Geração",
+      options: createGenerationOptions(),
+    });
 
   /* =======================================================
      SORT
      ======================================================= */
 
-  const {
-    field: sortField,
-
-    select: sortSelect,
-  } = createSelectField({
+  const { field: sortField, select: sortSelect } = createSelectField({
     id: `${instanceId}-sort`,
-
     label: "Ordenar por",
-
     options: SORT_OPTIONS,
   });
 
@@ -275,9 +246,7 @@ export function createPokemonFilters({
   function readControls() {
     return normalizeFilters({
       type: typeSelect.value,
-
       generation: generationSelect.value,
-
       sort: sortSelect.value,
     });
   }
@@ -419,29 +388,17 @@ export function createPokemonFilters({
 
   return {
     element,
-
     toggleButton,
-
     panel,
-
     form,
-
     typeSelect,
-
     generationSelect,
-
     sortSelect,
-
     open,
-
     close,
-
     toggle,
-
     reset,
-
     setFilters,
-
     getFilters,
 
     get isOpen() {
@@ -633,7 +590,6 @@ function createSelectField({ id, label, options }) {
 
   return {
     field,
-
     select,
   };
 }
@@ -646,14 +602,12 @@ function createTypeOptions() {
   return [
     {
       value: "all",
-
       label: "Todos os tipos",
     },
 
     ...POKEMON_TYPES.map((type) => {
       return {
         value: type,
-
         label: getPokemonTypeName(type),
       };
     }),
@@ -670,14 +624,12 @@ function createGenerationOptions() {
   return [
     {
       value: 0,
-
       label: "Todas as gerações",
     },
 
     ...generations.map((label, index) => {
       return {
         value: index + 1,
-
         label: `Geração ${label}`,
       };
     }),

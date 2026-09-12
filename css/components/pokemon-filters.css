@@ -9,14 +9,10 @@
 .pokemon-filters {
   position: relative;
 
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
   width: 100%;
+  height: 0;
 
-  margin: clamp(12px, 2vw, 16px) 0 4px;
+  margin: 0 auto;
 }
 
 /* =========================================================
@@ -28,14 +24,19 @@
 
   display: inline-flex;
 
+  flex: 0 0 auto;
+
   align-items: center;
   justify-content: center;
 
   gap: 8px;
 
-  min-height: 42px;
+  width: auto;
+  height: var(--home-control-height, 46px);
 
-  padding: 0 14px;
+  padding: 0 16px;
+
+  margin: 0;
 
   border: 1px solid rgba(23, 25, 28, 0.08);
 
@@ -48,15 +49,17 @@
   font: inherit;
 
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 750;
 
   line-height: 1;
+
+  white-space: nowrap;
 
   cursor: pointer;
 
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.03),
-    0 6px 18px rgba(15, 23, 42, 0.045);
+    0 1px 2px rgba(15, 23, 42, 0.025),
+    0 6px 18px rgba(15, 23, 42, 0.05);
 
   backdrop-filter: blur(14px);
 
@@ -76,13 +79,13 @@
 .pokemon-filters__toggle-icon {
   display: flex;
 
+  flex: 0 0 auto;
+
   align-items: center;
   justify-content: center;
 
-  width: 18px;
-  height: 18px;
-
-  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
 }
 
 .pokemon-filters__toggle-icon svg {
@@ -97,6 +100,10 @@
    ========================================================= */
 
 .pokemon-filters__toggle-label {
+  display: inline-block;
+
+  line-height: 1;
+
   white-space: nowrap;
 }
 
@@ -105,15 +112,22 @@
    ========================================================= */
 
 .pokemon-filters__badge {
+  position: absolute;
+
+  top: -4px;
+  right: -4px;
+
   display: inline-flex;
 
   align-items: center;
   justify-content: center;
 
-  min-width: 20px;
-  height: 20px;
+  min-width: 18px;
+  height: 18px;
 
-  padding: 0 6px;
+  padding: 0 5px;
+
+  border: 2px solid var(--color-background, #f7f8fa);
 
   border-radius: 999px;
 
@@ -121,10 +135,14 @@
 
   color: #ffffff;
 
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 800;
 
   line-height: 1;
+}
+
+.pokemon-filters__badge[hidden] {
+  display: none;
 }
 
 .pokemon-filters__toggle.is-active {
@@ -142,11 +160,12 @@
 
   z-index: 40;
 
-  top: calc(100% + 10px);
-
+  top: 10px;
   left: 50%;
 
-  width: min(100%, 380px);
+  width: min(calc(100vw - 24px), 380px);
+
+  overflow: hidden;
 
   border: 1px solid rgba(23, 25, 28, 0.08);
 
@@ -159,8 +178,6 @@
   backdrop-filter: blur(22px);
 
   -webkit-backdrop-filter: blur(22px);
-
-  overflow: hidden;
 
   transform: translateX(-50%);
 }
@@ -216,13 +233,13 @@
 .pokemon-filters__close {
   display: flex;
 
+  flex: 0 0 auto;
+
   align-items: center;
   justify-content: center;
 
   width: 34px;
   height: 34px;
-
-  flex: 0 0 auto;
 
   padding: 0;
 
@@ -532,16 +549,17 @@
    ========================================================= */
 
 @media (max-width: 359px) {
-  .pokemon-filters {
-    margin: 10px 0 2px;
+  .pokemon-filters__toggle {
+    gap: 6px;
+
+    padding-inline: 11px;
+
+    font-size: 0.72rem;
   }
 
-  .pokemon-filters__toggle {
-    min-height: 40px;
-
-    padding: 0 12px;
-
-    font-size: 0.78rem;
+  .pokemon-filters__toggle-icon {
+    width: 17px;
+    height: 17px;
   }
 
   .pokemon-filters__panel {
@@ -582,15 +600,18 @@
 
 @media (min-width: 600px) {
   .pokemon-filters {
-    margin: 14px 0 6px;
+    width: min(100%, 574px);
   }
 
   .pokemon-filters__toggle {
-    min-height: 44px;
-
-    padding: 0 16px;
+    padding-inline: 17px;
 
     font-size: 0.84rem;
+  }
+
+  .pokemon-filters__toggle-icon {
+    width: 20px;
+    height: 20px;
   }
 
   .pokemon-filters__panel {
@@ -624,7 +645,13 @@
 
 @media (min-width: 900px) {
   .pokemon-filters {
-    margin: 16px 0 8px;
+    width: min(100%, 614px);
+  }
+
+  .pokemon-filters__toggle {
+    padding-inline: 18px;
+
+    font-size: 0.86rem;
   }
 
   .pokemon-filters__panel {
@@ -650,7 +677,9 @@
 
     background: #ffffff;
 
-    box-shadow: 0 9px 22px rgba(15, 23, 42, 0.08);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.03),
+      0 9px 22px rgba(15, 23, 42, 0.08);
 
     transform: translateY(-1px);
   }

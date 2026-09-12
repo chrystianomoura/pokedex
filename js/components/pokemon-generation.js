@@ -14,22 +14,6 @@ export function createPokemonGenerationSelector({
   section.setAttribute("aria-label", "Selecionar geração");
 
   /* =======================================================
-     HEADER
-     ======================================================= */
-
-  const header = document.createElement("div");
-
-  header.className = "pokemon-generation__header";
-
-  const title = document.createElement("h2");
-
-  title.className = "pokemon-generation__title";
-
-  title.textContent = "Gerações:";
-
-  header.append(title);
-
-  /* =======================================================
      LIST
      ======================================================= */
 
@@ -53,7 +37,7 @@ export function createPokemonGenerationSelector({
      ASSEMBLY
      ======================================================= */
 
-  section.append(header, list);
+  section.append(list);
 
   return section;
 }
