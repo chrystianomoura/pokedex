@@ -4,10 +4,13 @@
    ========================================================= */
 
 /* =========================================================
-   SECTION
+   TOKENS
    ========================================================= */
 
 .pokemon-detail__evolution {
+  --evolution-line-color: #17191c;
+  --evolution-line-width: 2px;
+
   width: 100%;
 }
 
@@ -16,6 +19,8 @@
    ========================================================= */
 
 .pokemon-detail__evolution-tree {
+  position: relative;
+
   width: 100%;
 
   margin: 0 auto;
@@ -24,10 +29,42 @@
 }
 
 /* =========================================================
+   SVG CONNECTOR LAYER
+   ========================================================= */
+
+/*
+ * Todas as conexões das árvores ramificadas são desenhadas
+ * pelo JavaScript dentro deste único SVG.
+ *
+ * O CSS não desenha mais hastes, barras ou junções.
+ */
+
+.pokemon-detail__evolution-connectors {
+  position: absolute;
+
+  z-index: 0;
+
+  inset: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: visible;
+
+  pointer-events: none;
+}
+
+/* =========================================================
    BRANCH
    ========================================================= */
 
 .pokemon-detail__evolution-branch {
+  position: relative;
+
+  z-index: 1;
+
   display: flex;
 
   flex-direction: column;
@@ -163,11 +200,15 @@
    ========================================================= */
 
 .pokemon-detail__evolution-children {
+  position: relative;
+
+  z-index: 1;
+
   width: 100%;
 }
 
 /* =========================================================
-   LINEAR
+   LINEAR TREE
    ========================================================= */
 
 .pokemon-detail__evolution-tree--linear {
@@ -209,7 +250,7 @@
 
   margin: 7px 0 5px;
 
-  color: var(--color-text, #17191c);
+  color: var(--evolution-line-color);
 }
 
 .pokemon-detail__evolution-arrow svg {
@@ -217,6 +258,16 @@
 
   width: 100%;
   height: 100%;
+
+  overflow: visible;
+}
+
+.pokemon-detail__evolution-arrow path {
+  stroke: var(--evolution-line-color);
+
+  stroke-width: 2;
+
+  vector-effect: non-scaling-stroke;
 }
 
 /* =========================================================
@@ -231,9 +282,14 @@
    BRANCHED — CHILDREN
    ========================================================= */
 
-.pokemon-detail__evolution-children.is-branched {
-  position: relative;
+/*
+ * O espaço superior serve apenas para dar área física ao SVG
+ * entre o Pokémon pai e os filhos.
+ *
+ * Nenhuma linha é desenhada aqui.
+ */
 
+.pokemon-detail__evolution-children.is-branched {
   display: grid;
 
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -245,33 +301,24 @@
 
   margin-top: 8px;
 
-  padding-top: 28px;
-
-  isolation: isolate;
+  padding-top: 34px;
 }
 
 /* =========================================================
-   BRANCHED — CENTRAL SPINE
+   REMOVE LEGACY CONNECTORS
    ========================================================= */
 
-.pokemon-detail__evolution-children.is-branched::before {
-  position: absolute;
+/*
+ * Segurança contra qualquer regra antiga de conectores.
+ */
 
-  z-index: 0;
+.pokemon-detail__evolution-children.is-branched::before,
+.pokemon-detail__evolution-children.is-branched::after,
+.pokemon-detail__evolution-connection.is-branched::before,
+.pokemon-detail__evolution-connection.is-branched::after {
+  display: none;
 
-  top: 0;
-  bottom: 0;
-  left: 50%;
-
-  width: 1px;
-
-  background: var(--color-text, #17191c);
-
-  content: "";
-
-  transform: translateX(-50%);
-
-  pointer-events: none;
+  content: none;
 }
 
 /* =========================================================
@@ -290,76 +337,55 @@
   align-items: center;
 
   min-width: 0;
-
-  padding-top: 22px;
 }
 
 /* =========================================================
-   BRANCHED — HORIZONTAL LINE
+   UNPAIRED CHILD
    ========================================================= */
 
-.pokemon-detail__evolution-connection.is-branched::before {
-  position: absolute;
+/*
+ * 3, 5, 7... filhos:
+ *
+ * o último continua sendo filho direto do mesmo pai,
+ * mas ocupa sozinho uma segunda linha centralizada.
+ *
+ * Nunca colocamos três Pokémon lado a lado no mobile.
+ */
 
-  top: 0;
-
-  height: 1px;
-
-  background: var(--color-text, #17191c);
-
-  content: "";
-
-  pointer-events: none;
-}
-
-.pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
-  right: -6px;
-  left: 50%;
-}
-
-.pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
-  right: 50%;
-  left: -6px;
-}
-
-/* =========================================================
-   BRANCHED — VERTICAL STEM
-   ========================================================= */
-
-.pokemon-detail__evolution-connection.is-branched::after {
-  position: absolute;
-
-  top: 0;
-  left: 50%;
-
-  width: 1px;
-  height: 22px;
-
-  background: var(--color-text, #17191c);
-
-  content: "";
-
-  transform: translateX(-50%);
-
-  pointer-events: none;
-}
-
-/* =========================================================
-   BRANCHED — ODD LAST ITEM
-   ========================================================= */
-
-.pokemon-detail__evolution-connection.is-branched:last-child:nth-child(odd) {
-  width: 50%;
-
+.pokemon-detail__evolution-connection.is-branched.is-unpaired {
   grid-column: 1 / -1;
+
+  width: 50%;
 
   justify-self: center;
 }
 
-.pokemon-detail__evolution-connection.is-branched:last-child:nth-child(
-    odd
-  )::before {
-  display: none;
+/* =========================================================
+   MULTIPLE CHILDREN
+   ========================================================= */
+
+.pokemon-detail__evolution-children.is-branched[data-child-count="3"],
+.pokemon-detail__evolution-children.is-branched[data-child-count="4"],
+.pokemon-detail__evolution-children.is-branched[data-child-count="5"],
+.pokemon-detail__evolution-children.is-branched[data-child-count="6"],
+.pokemon-detail__evolution-children.is-branched[data-child-count="7"],
+.pokemon-detail__evolution-children.is-branched[data-child-count="8"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* =========================================================
+   DESCENDANTS
+   ========================================================= */
+
+/*
+ * Um filho que evolui novamente recebe espaço para que sua
+ * nova conexão seja percebida como outra relação evolutiva.
+ */
+
+.pokemon-detail__evolution-connection.has-descendants
+  > .pokemon-detail__evolution-branch
+  > .pokemon-detail__evolution-children {
+  margin-top: 14px;
 }
 
 /* =========================================================
@@ -387,7 +413,7 @@
 }
 
 /* =========================================================
-   SINGLE STAGE / EMPTY
+   EMPTY
    ========================================================= */
 
 .pokemon-detail__evolution-empty {
@@ -412,6 +438,10 @@
    ========================================================= */
 
 @media (max-width: 359px) {
+  /* =======================================================
+     LINEAR
+     ======================================================= */
+
   .pokemon-detail__evolution-pokemon {
     width: 148px;
   }
@@ -447,25 +477,9 @@
 
   .pokemon-detail__evolution-children.is-branched {
     column-gap: 6px;
-    row-gap: 28px;
+    row-gap: 30px;
 
-    padding-top: 25px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched {
-    padding-top: 19px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched::after {
-    height: 19px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
-    right: -3px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
-    left: -3px;
+    padding-top: 31px;
   }
 
   .pokemon-detail__evolution-tree--branched
@@ -543,23 +557,7 @@
     column-gap: 22px;
     row-gap: 42px;
 
-    padding-top: 34px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched {
-    padding-top: 26px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched::after {
-    height: 26px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
-    right: -11px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
-    left: -11px;
+    padding-top: 40px;
   }
 
   .pokemon-detail__evolution-tree--branched
@@ -635,23 +633,7 @@
     column-gap: 34px;
     row-gap: 46px;
 
-    padding-top: 38px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched {
-    padding-top: 29px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched::after {
-    height: 29px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched:nth-child(odd)::before {
-    right: -17px;
-  }
-
-  .pokemon-detail__evolution-connection.is-branched:nth-child(even)::before {
-    left: -17px;
+    padding-top: 44px;
   }
 
   .pokemon-detail__evolution-tree--branched

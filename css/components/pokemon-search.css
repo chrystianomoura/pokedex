@@ -222,28 +222,20 @@
    ========================================================= */
 
 .pokemon-search__status {
-  position: absolute;
+  display: block;
 
-  top: calc(100% + 6px);
-  left: 50%;
+  width: 100%;
 
-  z-index: 2;
+  margin: 16px 0 18px;
 
-  width: max-content;
-  max-width: 100%;
+  color: #626971;
 
-  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 650;
 
-  color: #6b727b;
-
-  font-size: 0.74rem;
-  font-weight: 600;
-
-  line-height: 1.35;
+  line-height: 1.4;
 
   text-align: center;
-
-  transform: translateX(-50%);
 
   pointer-events: none;
 }
@@ -309,9 +301,9 @@
   }
 
   .pokemon-search__status {
-    top: calc(100% + 5px);
+    margin: 14px 0 16px;
 
-    font-size: 0.7rem;
+    font-size: 0.8rem;
   }
 }
 

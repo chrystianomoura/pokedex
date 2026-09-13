@@ -145,7 +145,7 @@ export function createPokemonSearch() {
 
   form.append(field);
 
-  element.append(form, status);
+  element.append(form);
 
   /* =======================================================
      CLEAR BUTTON STATE

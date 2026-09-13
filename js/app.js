@@ -356,6 +356,7 @@ function createHomePage() {
 
   page.append(
     header,
+    search.status,
     grid,
     generationGrid,
     searchGrid,

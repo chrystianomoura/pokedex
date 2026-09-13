@@ -11,6 +11,8 @@ import {
 
 import { loadPokemonImage } from "../utils/pokemon-image.js";
 
+import { setupPokemonEvolutionConnectors } from "./pokemon-evolution-connectors.js";
+
 /* =========================================================
    POKÉDEX — POKÉMON DETAIL COMPONENT
    ========================================================= */
@@ -121,6 +123,8 @@ export function createPokemonDetail(
   setupArtworkVariants(article);
 
   setupSectionTabs(article);
+
+  setupPokemonEvolutionConnectors(article);
 
   return article;
 }
@@ -919,13 +923,15 @@ function createEvolutionNode(
 
   branch.className = "pokemon-detail__evolution-branch";
 
-  branch.dataset.depth = depth;
+  branch.dataset.depth = String(depth);
 
   const pokemon = createEvolutionPokemon(node, currentSpeciesId);
 
   branch.append(pokemon);
 
   const children = getEvolutionChildren(node);
+
+  branch.dataset.childCount = String(children.length);
 
   if (children.length === 0) {
     return branch;
@@ -937,16 +943,44 @@ function createEvolutionNode(
 
   childrenContainer.setAttribute("role", "group");
 
+  childrenContainer.dataset.childCount = String(children.length);
+
+  childrenContainer.dataset.rowCount = String(Math.ceil(children.length / 2));
+
   const isBranched = children.length > 1;
 
   childrenContainer.classList.add(isBranched ? "is-branched" : "is-linear");
 
-  children.forEach((child) => {
+  childrenContainer.classList.toggle(
+    "has-odd-children",
+    isBranched && children.length % 2 !== 0,
+  );
+
+  children.forEach((child, index) => {
     const connection = document.createElement("div");
 
     connection.className = "pokemon-detail__evolution-connection";
 
     connection.classList.add(isBranched ? "is-branched" : "is-linear");
+
+    const childChildren = getEvolutionChildren(child);
+
+    connection.dataset.childIndex = String(index);
+
+    connection.dataset.row = String(Math.floor(index / 2) + 1);
+
+    connection.dataset.column = String((index % 2) + 1);
+
+    connection.dataset.hasChildren = String(childChildren.length > 0);
+
+    connection.classList.toggle("has-descendants", childChildren.length > 0);
+
+    connection.classList.toggle(
+      "is-unpaired",
+      isBranched && children.length % 2 !== 0 && index === children.length - 1,
+    );
+
+    connection.classList.toggle("is-last", index === children.length - 1);
 
     if (!isBranched) {
       connection.append(createEvolutionArrow());
